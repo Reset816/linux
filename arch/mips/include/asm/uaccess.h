@@ -210,12 +210,12 @@ struct __large_struct { unsigned long buf[100]; };
 	"1:	"insn("%1", "%3")"				\n"	\
 	"2:							\n"	\
 	"	.insn						\n"	\
-	"	.section .fixup,\"ax\"				\n"	\
+	"	.section " __SECTION_NAME(__ex_fixup) ",\"ax\"  \n"	\
 	"3:	li	%0, %4					\n"	\
 	"	move	%1, $0					\n"	\
 	"	j	2b					\n"	\
 	"	.previous					\n"	\
-	"	.section __ex_table,\"a\"			\n"	\
+	"	.section " __SECTION_NAME(__ex_table) ",\"a\"   \n"	\
 	"	"__UA_ADDR "\t1b, 3b				\n"	\
 	"	.previous					\n"	\
 	: "=r" (__gu_err), "=r" (__gu_tmp)				\
@@ -239,13 +239,13 @@ struct __large_struct { unsigned long buf[100]; };
 	"2:	" insn("%D1", "4(%3)")"				\n"	\
 	"3:							\n"	\
 	"	.insn						\n"	\
-	"	.section	.fixup,\"ax\"			\n"	\
+	"	.section " __SECTION_NAME(__ex_fixup) ",\"ax\"  \n"	\
 	"4:	li	%0, %4					\n"	\
 	"	move	%1, $0					\n"	\
 	"	move	%D1, $0					\n"	\
 	"	j	3b					\n"	\
 	"	.previous					\n"	\
-	"	.section	__ex_table,\"a\"		\n"	\
+	"	.section " __SECTION_NAME(__ex_table) ",\"a\"   \n"	\
 	"	" __UA_ADDR "	1b, 4b				\n"	\
 	"	" __UA_ADDR "	2b, 4b				\n"	\
 	"	.previous					\n"	\
@@ -301,11 +301,11 @@ do {									\
 	"1:	"insn("%z2", "%3")"	# __put_data_asm	\n"	\
 	"2:							\n"	\
 	"	.insn						\n"	\
-	"	.section	.fixup,\"ax\"			\n"	\
+	"	.section " __SECTION_NAME(__ex_fixup) ",\"ax\"  \n"	\
 	"3:	li	%0, %4					\n"	\
 	"	j	2b					\n"	\
 	"	.previous					\n"	\
-	"	.section	__ex_table,\"a\"		\n"	\
+	"	.section " __SECTION_NAME(__ex_table) ",\"a\"   \n"	\
 	"	" __UA_ADDR "	1b, 3b				\n"	\
 	"	.previous					\n"	\
 	: "=r" (__pu_err)						\
@@ -320,11 +320,11 @@ do {									\
 	"2:	"insn("%D2", "4(%3)")"				\n"	\
 	"3:							\n"	\
 	"	.insn						\n"	\
-	"	.section	.fixup,\"ax\"			\n"	\
+	"	.section " __SECTION_NAME(__ex_fixup) ",\"ax\"  \n"	\
 	"4:	li	%0, %4					\n"	\
 	"	j	3b					\n"	\
 	"	.previous					\n"	\
-	"	.section	__ex_table,\"a\"		\n"	\
+	"	.section " __SECTION_NAME(__ex_table) ",\"a\"   \n"	\
 	"	" __UA_ADDR "	1b, 4b				\n"	\
 	"	" __UA_ADDR "	2b, 4b				\n"	\
 	"	.previous"						\

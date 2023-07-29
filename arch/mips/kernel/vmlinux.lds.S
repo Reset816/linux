@@ -67,7 +67,8 @@ SECTIONS
 		KPROBES_TEXT
 		IRQENTRY_TEXT
 		SOFTIRQENTRY_TEXT
-		*(.fixup)
+		/* Use __ex_fixup instead of .fixup to avoid name conflict */
+		KEEP(*(.fixup __ex_fixup __ex_fixup.[0-9a-zA-Z_]*))
 		*(.gnu.warning)
 		. = ALIGN(16);
 		*(.got)	/* Global offset table */
