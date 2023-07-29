@@ -9,10 +9,12 @@
 
 #ifdef CONFIG_MMU
 
+#include <linux/compiler.h>
+
 #ifdef __ASSEMBLY__
 
 #define __ASM_EXTABLE_RAW(insn, fixup, type, data)	\
-	.pushsection	__ex_table, "a";		\
+	pushsection(__ex_table,a)			\
 	.balign		4;				\
 	.long		((insn) - .);			\
 	.long		((fixup) - .);			\
@@ -30,13 +32,13 @@
 #include <linux/stringify.h>
 #include <asm/gpr-num.h>
 
-#define __ASM_EXTABLE_RAW(insn, fixup, type, data)	\
-	".pushsection	__ex_table, \"a\"\n"		\
-	".balign	4\n"				\
-	".long		((" insn ") - .)\n"		\
-	".long		((" fixup ") - .)\n"		\
-	".short		(" type ")\n"			\
-	".short		(" data ")\n"			\
+#define __ASM_EXTABLE_RAW(insn, fixup, type, data)		\
+	pushsection(__ex_table,a)				\
+	".balign	4\n"					\
+	".long		((" insn ") - .)\n"			\
+	".long		((" fixup ") - .)\n"			\
+	".short		(" type ")\n"				\
+	".short		(" data ")\n"				\
 	".popsection\n"
 
 #define _ASM_EXTABLE(insn, fixup)	\

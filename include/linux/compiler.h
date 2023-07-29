@@ -225,7 +225,42 @@ static inline void *offset_to_ptr(const int *off)
 	return (void *)((unsigned long)off + *off);
 }
 
+#define pushsection(name,...)				\
+	".altmacro\n" \
+	".ifndef .Ldefined\n" \
+	".Ldefined:\n" \
+	".macro _pushsection name,flag,type\n" \
+	"LOCAL unique\n" \
+	"unique:\n" \
+	".ifnb type\n" \
+	".pushsection name&unique&,\"flag&o\",type,unique\n" \
+	".else\n" \
+	".pushsection name&unique&,\"flag&o\",unique\n" \
+	".endif\n" \
+	".endm\n" \
+	".endif\n" \
+	"_pushsection "__stringify(name)","__stringify(__VA_ARGS__)"\n"
+
 #endif /* __ASSEMBLY__ */
+
+#ifdef __ASSEMBLY__
+
+#define pushsection(name,...) \
+	.altmacro; \
+	_pushsection name,__VA_ARGS__;
+
+.macro _pushsection name,flag,type
+LOCAL unique
+unique:
+	.ifnb type
+	.pushsection name&unique&,"flag&o",type,unique
+	.else
+	.pushsection name&unique&,"flag&o",unique
+	.endif
+.noaltmacro
+.endm
+
+#endif
 
 /* Import __stringify */
 #ifndef __stringify
