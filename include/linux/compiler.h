@@ -227,6 +227,40 @@ static inline void *offset_to_ptr(const int *off)
 
 #endif /* __ASSEMBLY__ */
 
+/* Import __stringify */
+#ifndef __stringify
+#include <linux/stringify.h>
+#endif
+
+/* Quite-unique ID. */
+#ifndef __QUITE_UNIQUE_ID
+# define __QUITE_UNIQUE_ID(prefix) __PASTE(__PASTE(prefix, __LINE__),__COUNTER__)
+#endif
+
+/* Quite-unique Section ID. */
+#ifndef __SECTION_ID
+#ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
+# define __SECTION_ID(prefix) __QUITE_UNIQUE_ID(prefix.)
+#else
+# define __SECTION_ID(prefix) prefix
+#endif
+#endif
+
+/* Quite-unique Section NAME. */
+#ifndef __SECTION_NAME
+# define __SECTION_NAME(prefix) __stringify(__SECTION_ID(prefix))
+#endif
+
+/* Unique Label ID. */
+/* Label is file scope, __LINE__ is enough, and not change in the same macro call */
+#ifndef __LABEL_ID
+# define __LABEL_ID(prefix) __PASTE(__PASTE(prefix, _), __LINE__)
+#endif
+
+#ifndef __LABEL_NAME
+# define __LABEL_NAME(prefix) __stringify(__LABEL_ID(prefix))
+#endif
+
 /* &a[0] degrades to a pointer: a different type from an array */
 #define __must_be_array(a)	BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
 

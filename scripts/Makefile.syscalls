@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: GPL-2.0
+
+ifndef SCRIPTS_MAKEFILE_SYSCALLS
+SCRIPTS_MAKEFILE_SYSCALLS = 1
+
+ifdef CONFIG_TRIM_UNUSED_SYSCALLS
+ifneq ($(wildcard $(CONFIG_USED_SYSCALLS)),)
+  used_syscalls_file = $(CONFIG_USED_SYSCALLS)
+  ifeq ($(shell test -s $(used_syscalls_file); echo $$?),0)
+    used_syscalls != cat $(CONFIG_USED_SYSCALLS)
+  endif
+else
+  ifeq ($(subst /,,$(CONFIG_USED_SYSCALLS)),$(CONFIG_USED_SYSCALLS))
+    used_syscalls = $(CONFIG_USED_SYSCALLS)
+  else
+    $(error No such file: $(CONFIG_USED_SYSCALLS))
+  endif
+endif
+ifneq ($(used_syscalls),)
+  used_syscalls := $(subst $(space),|,$(strip $(used_syscalls)))
+endif
+
+used_syscalls_deps = $(used_syscalls_file) $(objtree)/.config
+
+export used_syscalls used_syscalls_deps
+
+# Only support string style of syscalls
+ifdef CONFIG_TRIM_KEPT_UNUSED_SYSCALLS_BY_OBJCOPY
+cmd_trim_unused_syscalls = \
+	unused_syscalls=$$($(NM) -g $@ | grep -E "T (__se_sys_|sys_|compat_|__sys_)" | grep -E -v "(sys_ni_syscall|sys_call_table)" \
+		| rev | cut -d ' ' -f1 | rev | grep -E -v "($(used_syscalls))$$" | tr '[[:space:]]' '|' | sed -e 's/|$$//g'); \
+	unused_sections=$$($(READELF) -r $@ | grep -E 'Relocation.*(__se_sys_|__ex_table|__ex_fixup)' | grep -E -B1 '(__ex_table|__ex_fixup)' | cut -d "'" -f2 \
+		| awk '{ if (match($$0, /.*__se_sys_*/)) { sys=$$0; } else { a[$$sys]=$$0; printf("%s %s\n", sys, a[$$sys]); }}' \
+		| grep -E "$$unsued_syscalls" | tr ' ' '\n' | sort -u -r); \
+	$(OBJCOPY) $$(echo $$unused_sections | tr ' ' '\n' | sed -e 's/\(.*\)/--remove-section=\1/g') $@
+
+obj_used_syscalls_deps = $(used_syscalls_deps)
+endif # CONFIG_TRIM_KEPT_UNUSED_SYSCALLS_BY_OBJCOPY
+
+endif # CONFIG_TRIM_UNUSED_SYSCALLS
+endif # SCRIPTS_MAKEFILE_SYSCALLS

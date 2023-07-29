@@ -12,7 +12,7 @@
 #undef __SYSCALL
 #define __SYSCALL(nr, call)	[nr] = (call),
 
-void * const sys_call_table[__NR_syscalls] = {
-	[0 ... __NR_syscalls - 1] = sys_ni_syscall,
+void * const sys_call_table[NR_syscalls] = {
+	[0 ... NR_syscalls - 1] = sys_ni_syscall,
 #include <asm/unistd.h>
 };

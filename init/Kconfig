@@ -1403,6 +1403,13 @@ config LD_DEAD_CODE_DATA_ELIMINATION
 	  present. This option is not well tested yet, so use at your
 	  own risk.
 
+config LD_DEAD_CODE_DATA_ELIMINATION_DEBUG
+	bool "Debug dead code and data elimination (EXPERIMENTAL)"
+	depends on LD_DEAD_CODE_DATA_ELIMINATION
+	default n
+	help
+	  Enable --print-gc-sections for --gc-sections
+
 config LD_ORPHAN_WARN
 	def_bool y
 	depends on ARCH_WANT_LD_ORPHAN_WARN
@@ -1448,6 +1455,38 @@ config HAVE_PCSPKR_PLATFORM
 config BPF
 	bool
 	select CRYPTO_LIB_SHA1
+
+config HAVE_TRIM_UNUSED_SYSCALLS
+	bool
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	default n
+
+config HAVE_TRIM_KEPT_UNUSED_SYSCALLS
+	bool
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	default n
+
+config HAVE_SECTION_NO_KEEP_SUPPORT
+	bool
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	default n
+
+config SECTION_NO_KEEP_SUPPORT
+	bool
+	depends on HAVE_SECTION_NO_KEEP_SUPPORT
+	default n
+
+config SECTION_SHF_LINK_ORDER_SUPPORT
+	bool
+	depends on HAVE_SECTION_NO_KEEP_SUPPORT
+	select SECTION_NO_KEEP_SUPPORT
+	default n
+
+config SECTION_SHF_GROUP_SUPPORT
+	bool
+	depends on HAVE_SECTION_NO_KEEP_SUPPORT
+	select SECTION_NO_KEEP_SUPPORT
+	default n
 
 menuconfig EXPERT
 	bool "Configure standard kernel features (expert users)"
@@ -1674,6 +1713,96 @@ config MEMBARRIER
 	  compiler barrier.
 
 	  If unsure, say Y.
+
+config TRIM_UNUSED_SYSCALLS
+	bool "Trim unused syscalls (EXPERIMENTAL)" if EXPERT
+	default n
+	depends on HAVE_TRIM_UNUSED_SYSCALLS
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	select LD_DEAD_CODE_DATA_ELIMINATION
+	help
+	  Say Y here to trim all of the unused syscalls for a target system.
+
+	  Note, this is only for minimal embedded systems, please don't use it
+	  for generic Linux distributions.
+
+	  If unsure, say N.
+
+config USED_SYSCALLS
+	string "Configure used syscalls (EXPERIMENTAL)" if EXPERT
+	depends on TRIM_UNUSED_SYSCALLS
+	default ""
+	help
+	  This option allows to configure the syscalls used in a target system,
+	  the unused ones will be disabled and trimmed by TRIM_UNUSED_SYSCALLS.
+
+	  The used syscalls should be listed one by one like this:
+
+	      write exit reboot
+
+	  Or put them into a file specified by this option, one syscall per
+	  line is recommended for such a config file:
+
+	      write
+	      exit
+	      reboot
+
+	  Note, If keep this empty, all of the syscalls will be trimmed.
+
+	  If unsure, please disable TRIM_UNUSED_SYSCALLS.
+
+choice
+	prompt "Trim wrongly kept unused syscalls" if EXPERT
+	default TRIM_KEPT_UNUSED_SYSCALLS_NONE
+	depends on TRIM_UNUSED_SYSCALLS
+	depends on HAVE_TRIM_KEPT_UNUSED_SYSCALLS
+	help
+	  This option selects the method to trim unused syscall wrongly kept.
+
+config TRIM_KEPT_UNUSED_SYSCALLS_NONE
+	bool "none (EXPERIMENTAL)" if EXPERT
+	help
+	  Say Y here to not trim kept unused sections.
+
+	  If unsure, choose this.
+
+config TRIM_KEPT_UNUSED_SYSCALLS_BY_OBJCOPY
+	bool "objcopy (EXPERIMENTAL)" if EXPERT
+	help
+	  Say Y here to trim more 'unused' syscalls wrongly kept by __ex_table
+	  like sections in kernel space.
+
+	  This option enables the objcopy method, it is slow but works.
+
+	  If unsure, not choose this.
+
+config TRIM_KEPT_UNUSED_SYSCALLS_BY_SHF_LINK_ORDER
+	bool "SHF_LINK_ORDER attribute (EXPERIMENTAL)" if EXPERT
+	depends on HAVE_SECTION_NO_KEEP_SUPPORT
+	select SECTION_SHF_LINK_ORDER_SUPPORT
+	help
+	  Say Y here to trim more 'unused' syscalls wrongly kept by __ex_table
+	  like sections in kernel space.
+
+	  This option enables the section SHF_LINK_ORDER attribute method, it
+          is faster than objcopy.
+
+	  If unsure, not choose this.
+
+config TRIM_KEPT_UNUSED_SYSCALLS_BY_SHF_GROUP
+	bool "SHF_GROUP attribute (EXPERIMENTAL)" if EXPERT
+	depends on HAVE_SECTION_NO_KEEP_SUPPORT
+	select SECTION_SHF_GROUP_SUPPORT
+	help
+	  Say Y here to trim more 'unused' syscalls wrongly kept by __ex_table
+	  like sections in kernel space.
+
+	  This option enables the section SHF_GROUP attribute method, it
+          is faster than objcopy.
+
+	  If unsure, not choose this.
+
+endchoice
 
 config KALLSYMS
 	bool "Load all symbols for debugging/ksymoops" if EXPERT
