@@ -225,6 +225,7 @@ static inline void *offset_to_ptr(const int *off)
 	return (void *)((unsigned long)off + *off);
 }
 
+#ifdef CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT
 #define pushsection(name,...)				\
 	".altmacro\n" \
 	".ifndef .Ldefined\n" \
@@ -241,13 +242,34 @@ static inline void *offset_to_ptr(const int *off)
 	".endif\n" \
 	"_pushsection "__stringify(name)","__stringify(__VA_ARGS__)"\n"
 
+#elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
+#define pushsection(name,...)				\
+	".attach_to_group " __SECTION_NAME(name) "\n"	\
+	".pushsection "	__SECTION_NAME(name) ", \"a?\"\n"
+
+#else
+#define pushsection(name,...)				\
+	".pushsection "	__SECTION_NAME(__ex_table) ", \"a\"\n"
+#endif
+
 #endif /* __ASSEMBLY__ */
 
 #ifdef __ASSEMBLY__
 
-#define pushsection(name,...) \
+#ifdef CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT
+#define pushsection(name,...)			\
 	.altmacro; \
 	_pushsection name,__VA_ARGS__;
+
+#elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
+#define pushsection(name,...)			\
+	.attach_to_group __SECTION_ID(name);	\
+	.pushsection __SECTION_ID(name), "a?";
+
+#else
+#define pushsection(name,...)			\
+	.pushsection __SECTION_ID(name), __VA_ARGS__;
+#endif
 
 .macro _pushsection name,flag,type
 LOCAL unique
