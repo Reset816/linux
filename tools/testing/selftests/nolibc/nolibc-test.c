@@ -767,6 +767,41 @@ end:
 	return ret;
 }
 
+static int test_pipe(void)
+{
+	const char *const msg = "hello, nolibc";
+	int pipefd[2];
+	char buf[32];
+	pid_t pid;
+	ssize_t len;
+
+	if (pipe(pipefd) == -1)
+		return 1;
+
+	pid = fork();
+
+	switch (pid) {
+	case -1:
+		return 1;
+
+	case 0:
+		close(pipefd[0]);
+		write(pipefd[1], msg, strlen(msg));
+		close(pipefd[1]);
+		exit(EXIT_SUCCESS);
+
+	default:
+		close(pipefd[1]);
+		len = read(pipefd[0], buf, sizeof(buf));
+		close(pipefd[0]);
+		waitpid(pid, NULL, 0);
+
+		if (len != strlen(msg))
+			return 1;
+		return !!memcmp(buf, msg, len);
+	}
+}
+
 
 /* Run syscall tests between IDs <min> and <max>.
  * Return 0 on success, non-zero on failure.
