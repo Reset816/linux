@@ -63,6 +63,10 @@ DEFCONFIG_s390       = defconfig
 DEFCONFIG_loongarch  = defconfig
 DEFCONFIG            = $(DEFCONFIG_$(XARCH))
 
+# extra configs/ files appended to .config during the nolibc-test-config target
+# include common + architecture specific
+NOLIBC_TEST_CONFIG   = nolibc-test-common.config nolibc-test-$(XARCH).config
+
 # optional tests to run (default = all)
 TEST =
 
@@ -192,8 +196,22 @@ MAKE_KERNEL   = $(MAKE) -C $(srctree) ARCH=$(ARCH) CC=$(CC) CROSS_COMPILE=$(CROS
 KERNEL_CONFIG = $(objtree)/.config
 KERNEL_IMAGE  = $(objtree)/$(IMAGE)
 
-defconfig:
-	$(Q)$(MAKE_KERNEL) mrproper $(DEFCONFIG) prepare
+# kernel config for nolibc-test
+#
+# - delete the current configuration and all generated files via 'mrproper' target
+# - generate .config via '$(CONFIG)' or '$(DEFCONFIG_$(XARCH))' target
+# - merge extra config options from $(NOLIBC_TEST_CONFIG) files to .config
+# - use merged .config as base and fills in any missing symbols with '# CONFIG_* is not set' via 'allnoconfig' target
+# - prepare things we need to do before we recursively start building the kernel via 'prepare' target
+#
+nolibc-test-config:
+	$(Q)$(MAKE_KERNEL) mrproper
+	$(Q)$(MAKE_KERNEL) $(or $(CONFIG),$(DEFCONFIG))
+	$(Q)$(srctree)/scripts/kconfig/merge_config.sh -Q -O "$(objtree)" -m "$(KERNEL_CONFIG)" $(foreach c,$(NOLIBC_TEST_CONFIG),$(wildcard $(CURDIR)/configs/$c))
+	$(Q)$(MAKE_KERNEL) KCONFIG_ALLCONFIG=$(KERNEL_CONFIG) allnoconfig
+	$(Q)$(MAKE_KERNEL) prepare
+
+defconfig: nolibc-test-config
 
 kernel: initramfs
 	$(Q)$(MAKE_KERNEL) $(IMAGE_NAME) CONFIG_INITRAMFS_SOURCE=$(CURDIR)/initramfs
