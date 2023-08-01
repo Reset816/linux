@@ -142,41 +142,52 @@ endif
 libc-test: nolibc-test.c
 	$(QUIET_CC)$(CC) -o $@ $<
 
+# common macros for logging
+RUN_OUT = $(CURDIR)/run.out
+
 # local libc-test
 run-libc-test: libc-test
-	$(Q)./libc-test > "$(CURDIR)/run.out" || :
-	$(Q)$(REPORT) $(CURDIR)/run.out
+	$(Q)./libc-test > "$(RUN_OUT)" || :
+	$(Q)$(REPORT) "$(RUN_OUT)"
 
 # local nolibc-test
 run-nolibc-test: nolibc-test
-	$(Q)./nolibc-test > "$(CURDIR)/run.out" || :
-	$(Q)$(REPORT) $(CURDIR)/run.out
+	$(Q)./nolibc-test > "$(RUN_OUT)" || :
+	$(Q)$(REPORT) "$(RUN_OUT)"
 
 # qemu user-land test
 run-user: nolibc-test
-	$(Q)qemu-$(QEMU_ARCH) ./nolibc-test > "$(CURDIR)/run.out" || :
-	$(Q)$(REPORT) $(CURDIR)/run.out
+	$(Q)qemu-$(QEMU_ARCH) ./nolibc-test > "$(RUN_OUT)" || :
+	$(Q)$(REPORT) "$(RUN_OUT)"
 
 initramfs: nolibc-test
 	$(QUIET_MKDIR)mkdir -p initramfs
 	$(call QUIET_INSTALL, initramfs/init)
 	$(Q)cp nolibc-test initramfs/init
 
+# common macros for kernel targets
+MAKE_KERNEL   = $(MAKE) -C $(srctree) ARCH=$(ARCH) CC=$(CC) CROSS_COMPILE=$(CROSS_COMPILE)
+KERNEL_CONFIG = $(objtree)/.config
+KERNEL_IMAGE  = $(objtree)/$(IMAGE)
+
 defconfig:
-	$(Q)$(MAKE) -C $(srctree) ARCH=$(ARCH) CC=$(CC) CROSS_COMPILE=$(CROSS_COMPILE) mrproper $(DEFCONFIG) prepare
+	$(Q)$(MAKE_KERNEL) mrproper $(DEFCONFIG) prepare
 
 kernel: initramfs
-	$(Q)$(MAKE) -C $(srctree) ARCH=$(ARCH) CC=$(CC) CROSS_COMPILE=$(CROSS_COMPILE) $(IMAGE_NAME) CONFIG_INITRAMFS_SOURCE=$(CURDIR)/initramfs
+	$(Q)$(MAKE_KERNEL) $(IMAGE_NAME) CONFIG_INITRAMFS_SOURCE=$(CURDIR)/initramfs
+
+# common macros for qemu run/rerun targets
+QEMU_SYSTEM_RUN = qemu-system-$(QEMU_ARCH) -display none -no-reboot -kernel "$(KERNEL_IMAGE)" -serial stdio $(QEMU_ARGS)
 
 # run the tests after building the kernel
 run: kernel
-	$(Q)qemu-system-$(QEMU_ARCH) -display none -no-reboot -kernel "$(objtree)/$(IMAGE)" -serial stdio $(QEMU_ARGS) > "$(CURDIR)/run.out"
-	$(Q)$(REPORT) $(CURDIR)/run.out
+	$(Q)$(QEMU_SYSTEM_RUN) > "$(RUN_OUT)"
+	$(Q)$(REPORT) "$(RUN_OUT)"
 
 # re-run the tests from an existing kernel
 rerun:
-	$(Q)qemu-system-$(QEMU_ARCH) -display none -no-reboot -kernel "$(objtree)/$(IMAGE)" -serial stdio $(QEMU_ARGS) > "$(CURDIR)/run.out"
-	$(Q)$(REPORT) $(CURDIR)/run.out
+	$(Q)$(QEMU_SYSTEM_RUN) > "$(RUN_OUT)"
+	$(Q)$(REPORT) "$(RUN_OUT)"
 
 clean:
 	$(call QUIET_CLEAN, sysroot)
