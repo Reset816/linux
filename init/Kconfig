@@ -1621,6 +1621,11 @@ config SYSFS_SYSCALL
 config HAVE_PCSPKR_PLATFORM
 	bool
 
+config HAVE_TRIM_UNUSED_SYSCALLS
+	bool
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	default n
+
 menuconfig EXPERT
 	bool "Configure standard kernel features (expert users)"
 	# Unhide debug options, to make the on-by-default options visible
@@ -1912,6 +1917,37 @@ config CACHESTAT_SYSCALL
 	  pages marked for writeback, (recently) evicted pages).
 
 	  If unsure say Y here.
+
+config TRIM_UNUSED_SYSCALLS
+	bool "Trim unused syscalls (EXPERIMENTAL)" if EXPERT
+	default n
+	depends on HAVE_TRIM_UNUSED_SYSCALLS
+	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
+	select LD_DEAD_CODE_DATA_ELIMINATION
+	help
+	  Say Y here to trim all of the unused syscalls, excluding those defined
+	  in USED_SYSCALLS.
+
+	  Note, this is only for minimal embedded systems, please don't use it
+	  for generic Linux distributions.
+
+	  If unsure, say N.
+
+config USED_SYSCALLS
+	string "Configure used syscalls (EXPERIMENTAL)" if EXPERT
+	depends on TRIM_UNUSED_SYSCALLS
+	default ""
+	help
+	  This option allows to configure the syscalls used in a target system,
+	  the unused ones will be disabled and trimmed by TRIM_UNUSED_SYSCALLS.
+
+	  The used syscalls should be listed one by one like this:
+
+	      write exit reboot
+
+	  Note, this field CANNOT be empty (at least one syscall must be specified).
+
+	  If unsure, please disable TRIM_UNUSED_SYSCALLS.
 
 config KALLSYMS
 	bool "Load all symbols for debugging/ksymoops" if EXPERT
