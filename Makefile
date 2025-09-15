@@ -1299,6 +1299,10 @@ remove-stale-files:
 asm-generic := -f $(srctree)/scripts/Makefile.asm-headers obj
 
 PHONY += asm-generic uapi-asm-generic
+asm-generic: export CONFIG_TRIM_UNUSED_SYSCALLS := $(CONFIG_TRIM_UNUSED_SYSCALLS)
+asm-generic: export CONFIG_USED_SYSCALLS := $(CONFIG_USED_SYSCALLS)
+uapi-asm-generic: export CONFIG_TRIM_UNUSED_SYSCALLS := $(CONFIG_TRIM_UNUSED_SYSCALLS)
+uapi-asm-generic: export CONFIG_USED_SYSCALLS := $(CONFIG_USED_SYSCALLS)
 asm-generic: uapi-asm-generic
 	$(Q)$(MAKE) $(asm-generic)=arch/$(SRCARCH)/include/generated/asm \
 	generic=include/asm-generic
