@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0
+
+ifndef SCRIPTS_MAKEFILE_SYSCALLS
+  SCRIPTS_MAKEFILE_SYSCALLS = 1
+
+  empty :=
+  space := $(empty) $(empty)
+  comma := ,
+
+  ifdef CONFIG_TRIM_UNUSED_SYSCALLS
+    ifneq ($(CONFIG_USED_SYSCALLS),)
+      ifneq ($(shell printf '%s\n' "$(CONFIG_USED_SYSCALLS)" | grep -E -v '^[a-zA-Z0-9_ ]*$$'),)
+        $(error Invalid format in CONFIG_USED_SYSCALLS: Only alphanumeric characters and underscores are allowed, separated by spaces)
+      endif
+
+      used_syscalls := $(subst $(space),$(comma),$(strip $(CONFIG_USED_SYSCALLS)))
+    else
+      used_syscalls := NONE
+    endif
+
+    export used_syscalls
+  endif # CONFIG_TRIM_UNUSED_SYSCALLS
+
+endif # SCRIPTS_MAKEFILE_SYSCALLS
