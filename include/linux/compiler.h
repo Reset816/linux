@@ -269,6 +269,11 @@ static inline void *offset_to_ptr(const int *off)
 
 #endif /* __ASSEMBLY__ */
 
+/* Quite-unique ID. */
+#ifndef __QUITE_UNIQUE_ID
+# define __QUITE_UNIQUE_ID(prefix) __PASTE(__PASTE(prefix, __LINE__), __COUNTER__)
+#endif
+
 #ifdef CONFIG_64BIT
 #define ARCH_SEL(a,b) a
 #else
