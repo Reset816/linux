@@ -288,6 +288,12 @@ static inline void *offset_to_ptr(const int *off)
 #endif
 #endif
 
+/* Unique Label NAME. */
+/* Label is file scope, __LINE__ is enough, and not change in the same macro call */
+#ifndef __LABEL_NAME
+# define __LABEL_NAME(prefix) __stringify(__PASTE(__PASTE(prefix, _), __LINE__))
+#endif
+
 #ifdef CONFIG_64BIT
 #define ARCH_SEL(a,b) a
 #else
