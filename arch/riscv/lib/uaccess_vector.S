@@ -14,11 +14,9 @@
 #define ELEM_LMUL_SETTING m8
 #define vData v0
 
-	.macro fixup op reg addr lbl
-100:
-	\op \reg, \addr
-	_asm_extable	100b, \lbl
-	.endm
+#define fixup(op, reg, addr, lbl)	\
+	100: op reg, addr;		\
+	_asm_extable(100b, lbl)
 
 SYM_FUNC_START(__asm_vector_usercopy)
 	/* Enable access to user memory */
@@ -38,10 +36,10 @@ SYM_FUNC_END(__asm_vector_usercopy)
 SYM_FUNC_START(__asm_vector_usercopy_sum_enabled)
 loop:
 	vsetvli iVL, iNum, e8, ELEM_LMUL_SETTING, ta, ma
-	fixup vle8.v vData, (pSrc), 10f
+	fixup (vle8.v, vData, (pSrc), 10f)
 	sub iNum, iNum, iVL
 	add pSrc, pSrc, iVL
-	fixup vse8.v vData, (pDst), 11f
+	fixup (vse8.v, vData, (pDst), 11f)
 	add pDst, pDst, iVL
 	bnez iNum, loop
 
