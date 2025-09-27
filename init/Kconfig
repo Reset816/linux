@@ -1484,6 +1484,11 @@ config HAVE_SECTION_SHF_GROUP_SUPPORT
 	depends on AS_IS_GNU && AS_VERSION >= 23600
 	default y
 
+config HAVE_SECTION_RELOC_SUPPORT
+	bool
+	depends on AS_IS_GNU
+	default y
+
 menuconfig EXPERT
 	bool "Configure standard kernel features (expert users)"
 	# Unhide debug options, to make the on-by-default options visible
@@ -1782,6 +1787,11 @@ config SECTION_SHF_LINK_ORDER_SUPPORT
 	  linker script.
 
 	  If unsure, not choose this.
+
+config SECTION_RELOC_SUPPORT
+	bool "Using BFD_RELOC_NONE (EXPERIMENTAL)" if EXPERT
+	depends on HAVE_SECTION_RELOC_SUPPORT
+	select SECTION_NO_KEEP_SUPPORT
 
 config SECTION_SHF_GROUP_SUPPORT
 	bool "Using SHF_GROUP attribute (EXPERIMENTAL)" if EXPERT
