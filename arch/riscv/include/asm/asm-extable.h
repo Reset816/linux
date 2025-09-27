@@ -19,6 +19,15 @@
 	__LABEL_NAME(.L__ex_table) :			\
 	.pushsection __SECTION_NAME(__ex_table), "ao", __LABEL_NAME(.L__ex_table)
 
+#elif defined(CONFIG_SECTION_RELOC_SUPPORT)
+#define __ASM_EXTABLE_PUSH_SECTION \
+    ___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
+
+#define ___ASM_EXTABLE_PUSH_SECTION(label_name)			\
+	.reloc ., BFD_RELOC_NONE, label_name; \
+	.pushsection __SECTION_NAME(__ex_table), "a"; \
+	label_name:
+
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION			\
 	.attach_to_group __SECTION_NAME(__ex_table);	\
@@ -51,6 +60,15 @@
 #define __ASM_EXTABLE_PUSH_SECTION				\
 	__LABEL_NAME(.L__ex_table) ":"				\
 	".pushsection "	__SECTION_NAME(__ex_table) ", \"ao\"," __LABEL_NAME(.L__ex_table) "\n"
+
+#elif defined(CONFIG_SECTION_RELOC_SUPPORT)
+#define __ASM_EXTABLE_PUSH_SECTION				\
+	___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
+
+#define ___ASM_EXTABLE_PUSH_SECTION(label_name)				\
+	".reloc ., BFD_RELOC_NONE, " label_name "\n\t"                   \
+	".pushsection " __SECTION_NAME(__ex_table) ", \"a\"\n\t"        \
+	label_name ":"
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION				\
