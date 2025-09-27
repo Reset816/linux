@@ -14,9 +14,12 @@
 #ifdef __ASSEMBLY__
 
 #if defined(CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION			\
-	__LABEL_NAME(.L__ex_table) :			\
-	.pushsection __SECTION_NAME(__ex_table), "ao", __LABEL_NAME(.L__ex_table)
+#define __ASM_EXTABLE_PUSH_SECTION \
+    ___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
+
+#define ___ASM_EXTABLE_PUSH_SECTION(label_name)			\
+	label_name:			\
+	.pushsection __SECTION_NAME(__ex_table), "ao", label_name
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION			\
@@ -48,8 +51,11 @@
 
 #ifdef CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT
 #define __ASM_EXTABLE_PUSH_SECTION				\
-	__LABEL_NAME(.L__ex_table) ":"				\
-	".pushsection "	__SECTION_NAME(__ex_table) ", \"ao\"," __LABEL_NAME(.L__ex_table) "\n"
+	___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
+
+#define ___ASM_EXTABLE_PUSH_SECTION(label_name)				\
+	label_name ":"						\
+	".pushsection "	__SECTION_NAME(__ex_table) ", \"ao\"," label_name "\n"
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION				\
