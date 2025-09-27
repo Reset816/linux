@@ -1489,6 +1489,18 @@ config HAVE_SECTION_RELOC_SUPPORT
 	depends on AS_IS_GNU
 	default y
 
+config AS_HAS_RELOC
+	bool
+	def_bool $(as-instr,.pushsection .text ; .L__kcfg_reloc_test: ; .reloc .$(comma) BFD_RELOC_NONE$(comma) .L__kcfg_reloc_test ; .popsection)
+	help
+	  The assembler accepts the '.reloc' directive with 'BFD_RELOC_NONE'.
+	  This is used by inline assembly to create a no-op relocation that
+	  keeps a section/symbol alive.
+
+	  Known toolchain minimums (for reference):
+	    - GNU binutils (gas) >= 2.26
+	    - LLVM integrated assembler (IAS) >= 13.0.0
+
 menuconfig EXPERT
 	bool "Configure standard kernel features (expert users)"
 	# Unhide debug options, to make the on-by-default options visible
