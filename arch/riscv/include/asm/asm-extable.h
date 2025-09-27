@@ -11,6 +11,7 @@
 #ifdef CONFIG_MMU
 
 #include <linux/compiler.h>
+#include <linux/section-macros.h>
 
 #ifdef __ASSEMBLY__
 
@@ -21,12 +22,7 @@
 
 #elif defined(CONFIG_SECTION_RELOC_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION \
-    ___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
-
-#define ___ASM_EXTABLE_PUSH_SECTION(label_name)			\
-	.reloc ., BFD_RELOC_NONE, label_name; \
-	.pushsection __SECTION_NAME(__ex_table), "a"; \
-	label_name:
+	PUSHSECTION(__ex_table, "a")
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION			\
@@ -63,12 +59,7 @@
 
 #elif defined(CONFIG_SECTION_RELOC_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION				\
-	___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
-
-#define ___ASM_EXTABLE_PUSH_SECTION(label_name)				\
-	".reloc ., BFD_RELOC_NONE, " label_name "\n\t"                   \
-	".pushsection " __SECTION_NAME(__ex_table) ", \"a\"\n\t"        \
-	label_name ":"
+	PUSHSECTION(__ex_table, "a")
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION				\
