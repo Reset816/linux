@@ -25,7 +25,7 @@
 
 #elif defined(CONFIG_SECTION_RELOC_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION \
-	PUSHSECTION(__ex_table, "a")
+	PUSHSECTION __ex_table, "a"
 
 #elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
 #define __ASM_EXTABLE_PUSH_SECTION			\
