@@ -39,7 +39,7 @@
 	lbl ":\n\t"
 
 #define PUSHSECTION(sec, ...)                                                   \
-	_PUSHSECTION(__SECTION_NAME(sec), __SECTION_NAME(sec), __VA_ARGS__)
+	_PUSHSECTION(__SECTION_NAME(sec%=), __SECTION_NAME(sec), __VA_ARGS__)
 
 #endif /* __ASSEMBLY__ */
 
