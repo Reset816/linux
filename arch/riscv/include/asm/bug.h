@@ -12,8 +12,6 @@
 
 #include <asm/asm.h>
 
-#include <linux/section-macros.h>
-
 #define __INSN_LENGTH_MASK  _UL(0x3)
 #define __INSN_LENGTH_32    _UL(0x3)
 #define __COMPRESSED_INSN_MASK	_UL(0xffff)
@@ -56,7 +54,7 @@ typedef u32 bug_insn_t;
 #define ARCH_WARN_ASM(file, line, flags, size)			\
 		"1:\n\t"					\
 			"ebreak\n"				\
-			PUSHSECTION(__bug_table, "aw")	\
+			".pushsection __bug_table,\"aw\"\n\t"	\
 		"2:\n\t"					\
 		__BUG_ENTRY(file, line, flags) "\n\t"		\
 			".org 2b + " size "\n\t"                \
