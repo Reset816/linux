@@ -117,7 +117,7 @@ SECTIONS
 	. = ALIGN(8);
 	.alternative : {
 		__alt_start = .;
-		KEEP(*(.alternative))
+		*(.alternative*)
 		__alt_end = .;
 	}
 	__init_end = .;
