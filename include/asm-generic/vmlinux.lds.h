@@ -429,7 +429,7 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 
 #define JUMP_TABLE_DATA							\
 	. = ALIGN(8);							\
-	BOUNDED_SECTION_BY(__jump_table, ___jump_table)
+	BOUNDED_SECTION_BY(__jump_table, ___jump_table, NO_KEEP)
 
 #ifdef CONFIG_HAVE_STATIC_CALL_INLINE
 #define STATIC_CALL_DATA						\
