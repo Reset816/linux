@@ -121,7 +121,7 @@ SECTIONS
 	. = ALIGN(8);
 	.alternative : {
 		__alt_start = .;
-		COND_KEEP(alternative, *(alternative*))
+		COND_KEEP(alternative, *(BSEC_MAIN(.alternative)))
 		__alt_end = .;
 	}
 	__init_end = .;
