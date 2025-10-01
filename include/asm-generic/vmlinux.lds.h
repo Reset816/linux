@@ -51,6 +51,7 @@
  */
 
 #include <asm-generic/codetag.lds.h>
+#include <linux/compiler_types.h>
 
 #ifndef LOAD_OFFSET
 #define LOAD_OFFSET 0
@@ -122,6 +123,17 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 #define SBSS_MAIN .sbss
 #define BSEC_MAIN(sec) sec
 #endif
+
+#ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
+#define NOKEEP___jump_table 1
+#define NOKEEP___ex_table 1
+#endif
+
+#define __KEEP_ACT_0(sec) KEEP(sec)
+#define __KEEP_ACT_1(sec) sec
+
+#define COND_KEEP(sec, list) \
+	__PASTE(__KEEP_ACT_, __is_defined(NOKEEP_##sec))(list)
 
 /*
  * GCC 4.5 and later have a 32 bytes section alignment for structures.
@@ -196,30 +208,19 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 # endif
 #endif
 
-#ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
-#define NO_KEEP(sec) sec
-#else
-#define NO_KEEP(sec) KEEP(sec)
-#endif
 
-#define _BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, _BEGIN_, _END_, _KEEP_, ...)	\
+#define BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, _BEGIN_, _END_)	\
 	_BEGIN_##_label_ = .;						\
-	_KEEP_(*(BSEC_MAIN(_sec_)))					\
+	COND_KEEP(_sec_, *(BSEC_MAIN(_sec_)))					\
 	_END_##_label_ = .;
 
-#define BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, _BEGIN_, _END_, ...)		\
-	_BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, _BEGIN_, _END_, ##__VA_ARGS__, KEEP)
-
-#define _BOUNDED_SECTION_POST_LABEL(_sec_, _label_, _BEGIN_, _END_, _KEEP_, ...)\
+#define BOUNDED_SECTION_POST_LABEL(_sec_, _label_, _BEGIN_, _END_)	\
 	_label_##_BEGIN_ = .;						\
-	_KEEP_(*(BSEC_MAIN(_sec_)))					\
+	COND_KEEP(_sec_, *(BSEC_MAIN(_sec_)))					\
 	_label_##_END_ = .;
 
-#define BOUNDED_SECTION_POST_LABEL(_sec_, _label_, _BEGIN_, _END_, ...)		\
-	_BOUNDED_SECTION_POST_LABEL(_sec_, _label_, _BEGIN_, _END_, ##__VA_ARGS__, KEEP)
-
-#define BOUNDED_SECTION_BY(_sec_, _label_, ...)				\
-	_BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, __start, __stop, ##__VA_ARGS__, KEEP)
+#define BOUNDED_SECTION_BY(_sec_, _label_)				\
+	BOUNDED_SECTION_PRE_LABEL(_sec_, _label_, __start, __stop)
 
 #define BOUNDED_SECTION(_sec)	 BOUNDED_SECTION_BY(_sec, _sec)
 
@@ -429,7 +430,7 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 
 #define JUMP_TABLE_DATA							\
 	. = ALIGN(8);							\
-	BOUNDED_SECTION_BY(__jump_table, ___jump_table, NO_KEEP)
+	BOUNDED_SECTION_BY(__jump_table, ___jump_table)
 
 #ifdef CONFIG_HAVE_STATIC_CALL_INLINE
 #define STATIC_CALL_DATA						\
@@ -673,7 +674,7 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 #define EXCEPTION_TABLE(align)						\
 	. = ALIGN(align);						\
 	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {		\
-		BOUNDED_SECTION_BY(__ex_table, ___ex_table, NO_KEEP)		\
+		BOUNDED_SECTION_BY(__ex_table, ___ex_table)		\
 	}
 
 /*

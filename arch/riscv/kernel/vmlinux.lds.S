@@ -21,6 +21,10 @@
 #include <asm/set_memory.h>
 #include "image-vars.h"
 
+#ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
+#define NOKEEP_alternative
+#endif
+
 #include <linux/sizes.h>
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
@@ -117,7 +121,7 @@ SECTIONS
 	. = ALIGN(8);
 	.alternative : {
 		__alt_start = .;
-		*(.alternative*)
+		COND_KEEP(alternative, *(alternative*))
 		__alt_end = .;
 	}
 	__init_end = .;
