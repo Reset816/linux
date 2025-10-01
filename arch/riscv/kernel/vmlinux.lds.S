@@ -22,7 +22,7 @@
 #include "image-vars.h"
 
 #ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
-#define NOKEEP_alternative
+#define NOKEEP_alternative 1
 #endif
 
 #include <linux/sizes.h>
@@ -121,7 +121,7 @@ SECTIONS
 	. = ALIGN(8);
 	.alternative : {
 		__alt_start = .;
-		COND_KEEP(alternative, *(BSEC_MAIN(.alternative)))
+		COND_KEEP(alternative, *(.alternative*))
 		__alt_end = .;
 	}
 	__init_end = .;
