@@ -7,7 +7,7 @@
 
 #ifdef __ASSEMBLY__
 
-.macro  PUSHSECTION_NAMED label:req, section:req, args:vararg
+.macro  _PUSHSECTION label:req, section:req, args:vararg
 #ifdef CONFIG_AS_HAS_RELOC
         .reloc  ., BFD_RELOC_NONE, \label
 #endif
@@ -16,14 +16,14 @@
 \label:
         .endm
 
-        .macro  PUSHSECTION section:req, args:vararg
-        PUSHSECTION_NAMED .Lpushsec\@, \section, \args
-        .endm
+.macro  PUSHSECTION section:req, args:vararg
+        _PUSHSECTION .Lpushsec\@, \section, \args
+.endm
 
 
 #else /* !__ASSEMBLY__ */
 
-#define __ASM_UNIQUE_LBL(kind)   ".L" __stringify(__UNIQUE_ID(kind))
+#define __ASM_UNIQUE_LBL(kind)   ".L" __UNIQUE_ID(kind)
 
 #ifdef CONFIG_AS_HAS_RELOC
 # define __ASM_BFD_RELOC_NONE(lbl)  ".reloc ., BFD_RELOC_NONE, " lbl "\n\t"
@@ -33,7 +33,7 @@
 
 #define _PUSHSECTION(lbl, sec, ...)                                             \
 	__ASM_BFD_RELOC_NONE(lbl)                                                   \
-	".pushsection " __stringify(sec) ", " #__VA_ARGS__ "\n\t"                   \
+	".pushsection " sec ", " #__VA_ARGS__ "\n\t"                   \
 	lbl ":\n\t"
 
 #define PUSHSECTION(sec, ...)                                                   \
