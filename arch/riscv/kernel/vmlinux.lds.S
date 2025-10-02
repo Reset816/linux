@@ -22,6 +22,9 @@
 #include "image-vars.h"
 
 #ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
+#define NOKEEP___jump_table 1
+#define NOKEEP___ex_table 1
+#define NOKEEP___bug_table 1
 #define NOKEEP_alternative 1
 #endif
 
