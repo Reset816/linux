@@ -127,6 +127,7 @@ defined(CONFIG_AUTOFDO_CLANG) || defined(CONFIG_PROPELLER_CLANG)
 #ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
 #define NOKEEP___jump_table 1
 #define NOKEEP___ex_table 1
+#define NOKEEP___bug_table 1
 #endif
 
 #define __KEEP_ACT_0(sec) KEEP(sec)
