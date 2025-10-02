@@ -11,7 +11,6 @@
 #ifdef CONFIG_MMU
 
 #include <linux/compiler.h>
-#include <linux/section-macros.h>
 
 #ifdef __ASSEMBLY__
 

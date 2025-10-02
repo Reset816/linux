@@ -11,7 +11,7 @@
 
 #include <linux/types.h>
 #include <asm/asm.h>
-#include <linux/section-macros.h>
+#include <linux/compiler.h>
 
 #define HAVE_JUMP_LABEL_BATCH
 

@@ -4,7 +4,7 @@
 
 #ifdef CONFIG_RISCV_ALTERNATIVE
 
-#include <linux/section-macros.h>
+#include <linux/compiler.h>
 
 #ifdef __ASSEMBLY__
 
