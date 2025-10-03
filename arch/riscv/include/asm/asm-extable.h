@@ -14,30 +14,8 @@
 
 #ifdef __ASSEMBLY__
 
-#if defined(CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION \
-    ___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(.L__ex_table))
-
-#define ___ASM_EXTABLE_PUSH_SECTION(label_name)			\
-	label_name:			\
-	.pushsection __SECTION_NAME(__ex_table), "ao", label_name
-
-#elif defined(CONFIG_SECTION_RELOC_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION \
-	PUSHSECTION __ex_table, "a"
-
-#elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION			\
-	.attach_to_group __SECTION_NAME(__ex_table);	\
-	.pushsection __SECTION_NAME(__ex_table), "a?"
-
-#else
-#define __ASM_EXTABLE_PUSH_SECTION			\
-	.pushsection __SECTION_NAME(__ex_table), "a"
-#endif
-
 #define __ASM_EXTABLE_RAW(insn, fixup, type, data)	\
-	__ASM_EXTABLE_PUSH_SECTION;			\
+	PUSHSECTION __ex_table, "a";			\
 	.balign		4;				\
 	.long		((insn) - .);			\
 	.long		((fixup) - .);			\
@@ -54,30 +32,8 @@
 #include <linux/stringify.h>
 #include <asm/gpr-num.h>
 
-#ifdef CONFIG_SECTION_SHF_LINK_ORDER_SUPPORT
-#define __ASM_EXTABLE_PUSH_SECTION				\
-	___ASM_EXTABLE_PUSH_SECTION(__SECTION_NAME(__ex_table))
-
-#define ___ASM_EXTABLE_PUSH_SECTION(label_name)				\
-	label_name ":\n"						\
-	".pushsection "	__SECTION_NAME(__ex_table) ", \"ao\"," label_name "\n"
-
-#elif defined(CONFIG_SECTION_RELOC_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION				\
-	PUSHSECTION(__ex_table, "a")
-
-#elif defined(CONFIG_SECTION_SHF_GROUP_SUPPORT)
-#define __ASM_EXTABLE_PUSH_SECTION				\
-	".attach_to_group " __SECTION_NAME(__ex_table) "\n"	\
-	".pushsection "	__SECTION_NAME(__ex_table) ", \"a?\"\n"
-
-#else
-#define __ASM_EXTABLE_PUSH_SECTION				\
-	".pushsection "	__SECTION_NAME(__ex_table) ", \"a\"\n"
-#endif
-
 #define __ASM_EXTABLE_RAW(insn, fixup, type, data)		\
-	__ASM_EXTABLE_PUSH_SECTION				\
+	PUSHSECTION(__ex_table, "a")				\
 	".balign	4\n"				\
 	".long		((" insn ") - .)\n"		\
 	".long		((" fixup ") - .)\n"		\

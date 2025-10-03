@@ -21,7 +21,7 @@
 #include <asm/set_memory.h>
 #include "image-vars.h"
 
-#ifdef CONFIG_SECTION_NO_KEEP_SUPPORT
+#ifdef CONFIG_PUSHSECTION_WITH_RELOC
 #define NOKEEP___jump_table 1
 #define NOKEEP___ex_table 1
 #define NOKEEP___bug_table 1

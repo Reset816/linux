@@ -309,7 +309,7 @@ static inline void *offset_to_ptr(const int *off)
 # define __LABEL_NAME(prefix) __stringify(__PASTE(__PASTE(prefix, _), __LINE__))
 #endif
 
-#ifdef CONFIG_AS_HAS_RELOC
+#ifdef CONFIG_PUSHSECTION_WITH_RELOC
 #define __ASM_BFD_RELOC_NONE(lbl) ".reloc ., BFD_RELOC_NONE, " lbl "\n\t"
 #else
 #define __ASM_BFD_RELOC_NONE(lbl)
