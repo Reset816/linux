@@ -1626,6 +1626,18 @@ config HAVE_TRIM_UNUSED_SYSCALLS
 	depends on HAVE_LD_DEAD_CODE_DATA_ELIMINATION
 	default n
 
+config HAVE_ASM_RELOC
+	bool
+	def_bool $(as-instr,.pushsection .text ; .L__kcfg_reloc_test: ; .reloc .$(comma) BFD_RELOC_NONE$(comma) .L__kcfg_reloc_test ; .popsection)
+	help
+	  The assembler accepts the '.reloc' directive with 'BFD_RELOC_NONE'.
+	  This is used by inline assembly to create a no-op relocation that
+	  keeps a section/symbol alive.
+
+	  Known toolchain minimums (for reference):
+	    - GNU binutils (gas) >= 2.26
+	    - LLVM integrated assembler (IAS) >= 13.0.0
+
 menuconfig EXPERT
 	bool "Configure standard kernel features (expert users)"
 	# Unhide debug options, to make the on-by-default options visible
@@ -1948,6 +1960,15 @@ config USED_SYSCALLS
 	  Note, this field CANNOT be empty (at least one syscall must be specified).
 
 	  If unsure, please disable TRIM_UNUSED_SYSCALLS.
+
+config PUSHSECTION_WITH_RELOC
+	bool "Trim more syscalls"
+	depends on TRIM_UNUSED_SYSCALLS && HAVE_ASM_RELOC
+	default y
+	help
+	  Enable this if you want to use the '.reloc' directive with 'BFD_RELOC_NONE'
+	  in inline assembly to create a no-op relocation that keeps a section/symbol alive.
+	  This is used by inline assembly to create a no-op relocation that keeps a section/symbol alive.
 
 config KALLSYMS
 	bool "Load all symbols for debugging/ksymoops" if EXPERT
