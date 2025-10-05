@@ -7,6 +7,13 @@
 #define RO_EXCEPTION_TABLE_ALIGN	4
 #define RUNTIME_DISCARD_EXIT
 
+#ifdef CONFIG_PUSHSECTION_WITH_RELOC
+#define NOKEEP___jump_table 1
+#define NOKEEP___ex_table 1
+#define NOKEEP___bug_table 1
+#define NOKEEP_alternative 1
+#endif
+
 #ifdef CONFIG_XIP_KERNEL
 #include "vmlinux-xip.lds.S"
 #else
@@ -20,13 +27,6 @@
 #include <asm/thread_info.h>
 #include <asm/set_memory.h>
 #include "image-vars.h"
-
-#ifdef CONFIG_PUSHSECTION_WITH_RELOC
-#define NOKEEP___jump_table 1
-#define NOKEEP___ex_table 1
-#define NOKEEP___bug_table 1
-#define NOKEEP_alternative 1
-#endif
 
 #include <linux/sizes.h>
 OUTPUT_ARCH(riscv)
