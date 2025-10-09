@@ -3,6 +3,7 @@
 #define __LINUX_COMPILER_H
 
 #include <linux/compiler_types.h>
+#include <linux/stringify.h>
 
 #ifndef __ASSEMBLY__
 
@@ -267,7 +268,40 @@ static inline void *offset_to_ptr(const int *off)
 	return (void *)((unsigned long)off + *off);
 }
 
-#endif /* __ASSEMBLY__ */
+#else /* __ASSEMBLY__ */
+
+.macro  _PUSHSECTION label:req, section:req, args:vararg
+#ifdef CONFIG_AS_HAS_RELOC
+	.reloc  ., BFD_RELOC_NONE, \label
+#endif
+	.pushsection \section\().\@, \args
+	\label :
+.endm
+
+.macro  PUSHSECTION section:req, args:vararg
+	_PUSHSECTION .Lsec\@, \section, \args
+.endm
+
+#endif /* !__ASSEMBLY__ */
+
+/* Quite-unique ID. */
+#ifndef __QUITE_UNIQUE_ID
+#define __QUITE_UNIQUE_ID(prefix)					\
+	__stringify(prefix) __stringify(__LINE__) "_" __stringify(__COUNTER__)
+#endif
+
+#ifdef CONFIG_PUSHSECTION_WITH_RELOC
+#define __ASM_BFD_RELOC_NONE(lbl) ".reloc ., BFD_RELOC_NONE, " lbl "\n\t"
+#else
+#define __ASM_BFD_RELOC_NONE(lbl)
+#endif
+
+#define _PUSHSECTION(lbl, sec, ...)					\
+	__ASM_BFD_RELOC_NONE(lbl)					\
+	".pushsection " sec ", " #__VA_ARGS__ "\n\t" lbl ":\n\t"
+
+#define PUSHSECTION(sec, ...)						\
+	_PUSHSECTION(__QUITE_UNIQUE_ID(.Lsec.%=), __QUITE_UNIQUE_ID(sec.%=), __VA_ARGS__)
 
 #ifdef CONFIG_64BIT
 #define ARCH_SEL(a,b) a
