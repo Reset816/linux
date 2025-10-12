@@ -38,11 +38,12 @@ static __always_inline void arch_atomic_add(int i, atomic_t *v)
 }
 static __always_inline void arch_atomic_sub(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "subl %1,%0"
-		     : "+m" (v->counter)
-		     : "ir" (i) : "memory");
-}
+	int __tmp = __READ_ONCE(v->counter);
 
+	__tmp -= i;
+
+	__WRITE_ONCE(v->counter, __tmp);
+}
 static __always_inline bool arch_atomic_sub_and_test(int i, atomic_t *v)
 {
 	return GEN_BINARY_RMWcc(LOCK_PREFIX "subl", v->counter, e, "er", i);
