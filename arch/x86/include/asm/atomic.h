@@ -70,8 +70,7 @@ static __always_inline void arch_atomic_dec(atomic_t *v)
 }
 #define arch_atomic_dec arch_atomic_dec
 
-	static __always_inline bool
-	arch_atomic_dec_and_test(atomic_t *v)
+static __always_inline bool arch_atomic_dec_and_test(atomic_t *v)
 {
 	return GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, e);
 }
@@ -119,7 +118,8 @@ static __always_inline int arch_atomic_cmpxchg(atomic_t *v, int old, int new)
 }
 #define arch_atomic_cmpxchg arch_atomic_cmpxchg
 
-static __always_inline bool arch_atomic_try_cmpxchg(atomic_t *v, int *old, int new)
+static __always_inline bool arch_atomic_try_cmpxchg(atomic_t *v, int *old,
+						    int new)
 {
 	return arch_try_cmpxchg(&v->counter, old, new);
 }
@@ -133,12 +133,12 @@ static __always_inline int arch_atomic_xchg(atomic_t *v, int new)
 
 static __always_inline void arch_atomic_and(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "andl %1,%0"
-			: "+m" (v->counter)
-			: "ir" (i)
-			: "memory");
-}
+	int __tmp = __READ_ONCE(v->counter);
 
+	__tmp &= i;
+
+	__WRITE_ONCE(v->counter, __tmp);
+}
 static __always_inline int arch_atomic_fetch_and(int i, atomic_t *v)
 {
 	int val = arch_atomic_read(v);
