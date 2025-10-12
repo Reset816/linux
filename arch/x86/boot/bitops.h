@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* -*- linux-c -*- ------------------------------------------------------- *
- *
+*
  *   Copyright (C) 1991, 1992 Linus Torvalds
  *   Copyright 2007 rPath, Inc. - All Rights Reserved
  *
@@ -12,7 +12,7 @@
 
 #ifndef BOOT_BITOPS_H
 #define BOOT_BITOPS_H
-#define _LINUX_BITOPS_H		/* Inhibit inclusion of <linux/bitops.h> */
+#define _LINUX_BITOPS_H /* Inhibit inclusion of <linux/bitops.h> */
 
 #include <linux/types.h>
 #include <asm/asm.h>
@@ -26,11 +26,12 @@ static inline bool variable_test_bit(int nr, const void *addr)
 {
 	bool v;
 	const u32 *p = addr;
+	u32 word;
 
-	asm("btl %2,%1" CC_SET(c) : CC_OUT(c) (v) : "m" (*p), "Ir" (nr));
+	word = p[nr >> 5];
+	v = ((word >> (nr & 31)) & 1U) != 0;
 	return v;
 }
-
 #define test_bit(nr,addr) \
 (__builtin_constant_p(nr) ? \
  constant_test_bit((nr),(addr)) : \
