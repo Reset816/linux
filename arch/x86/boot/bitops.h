@@ -32,14 +32,16 @@ static inline bool variable_test_bit(int nr, const void *addr)
 	v = ((word >> (nr & 31)) & 1U) != 0;
 	return v;
 }
-#define test_bit(nr,addr) \
-(__builtin_constant_p(nr) ? \
- constant_test_bit((nr),(addr)) : \
- variable_test_bit((nr),(addr)))
+#define test_bit(nr, addr)                                            \
+	(__builtin_constant_p(nr) ? constant_test_bit((nr), (addr)) : \
+				    variable_test_bit((nr), (addr)))
 
 static inline void set_bit(int nr, void *addr)
 {
-	asm("btsl %1,%0" : "+m" (*(u32 *)addr) : "Ir" (nr));
-}
+	u32 *p = addr;
+	u32 mask;
 
+	mask = 1U << (nr & 31);
+	p[nr >> 5] |= mask;
+}
 #endif /* BOOT_BITOPS_H */
