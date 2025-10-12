@@ -161,7 +161,8 @@ static __always_inline int arch_atomic_fetch_or(int i, atomic_t *v)
 {
 	int val = arch_atomic_read(v);
 
-	do { } while (!arch_atomic_try_cmpxchg(v, &val, val | i));
+	do {
+	} while (!arch_atomic_try_cmpxchg(v, &val, val | i));
 
 	return val;
 }
@@ -169,12 +170,11 @@ static __always_inline int arch_atomic_fetch_or(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_xor(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "xorl %1,%0"
-			: "+m" (v->counter)
-			: "ir" (i)
-			: "memory");
-}
+	int val = arch_atomic_read(v);
 
+	do {
+	} while (!arch_atomic_try_cmpxchg(v, &val, val ^ i));
+}
 static __always_inline int arch_atomic_fetch_xor(int i, atomic_t *v)
 {
 	int val = arch_atomic_read(v);
