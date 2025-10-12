@@ -172,12 +172,18 @@ static __always_inline s64 arch_atomic64_fetch_or(s64 i, atomic64_t *v)
 
 static __always_inline void arch_atomic64_xor(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "xorq %1,%0"
-			: "+m" (v->counter)
-			: "er" (i)
-			: "memory");
-}
+	s64 old = __READ_ONCE(v->counter);
 
+	for (;;) {
+		s64 prev;
+		s64 new_val = old ^ i;
+
+		prev = arch_cmpxchg(&v->counter, old, new_val);
+		if (prev == old)
+			break;
+		old = prev;
+	}
+}
 static __always_inline s64 arch_atomic64_fetch_xor(s64 i, atomic64_t *v)
 {
 	s64 val = arch_atomic64_read(v);
