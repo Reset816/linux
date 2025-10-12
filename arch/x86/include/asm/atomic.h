@@ -60,15 +60,18 @@ static __always_inline void arch_atomic_inc(atomic_t *v)
 }
 #define arch_atomic_inc arch_atomic_inc
 
-	static __always_inline void
-	arch_atomic_dec(atomic_t *v)
+static __always_inline void arch_atomic_dec(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "decl %0"
-		     : "+m" (v->counter) :: "memory");
+	int __tmp = __READ_ONCE(v->counter);
+
+	__tmp--;
+
+	__WRITE_ONCE(v->counter, __tmp);
 }
 #define arch_atomic_dec arch_atomic_dec
 
-static __always_inline bool arch_atomic_dec_and_test(atomic_t *v)
+	static __always_inline bool
+	arch_atomic_dec_and_test(atomic_t *v)
 {
 	return GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, e);
 }
