@@ -52,12 +52,16 @@ static __always_inline bool arch_atomic_sub_and_test(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_inc(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "incl %0"
-		     : "+m" (v->counter) :: "memory");
+	int __tmp = __READ_ONCE(v->counter);
+
+	__tmp++;
+
+	__WRITE_ONCE(v->counter, __tmp);
 }
 #define arch_atomic_inc arch_atomic_inc
 
-static __always_inline void arch_atomic_dec(atomic_t *v)
+	static __always_inline void
+	arch_atomic_dec(atomic_t *v)
 {
 	asm volatile(LOCK_PREFIX "decl %0"
 		     : "+m" (v->counter) :: "memory");
