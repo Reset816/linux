@@ -73,54 +73,29 @@ extern void __add_wrong_size(void)
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
-#define __raw_cmpxchg(ptr, old, new, size, lock)			\
-({									\
-	__typeof__(*(ptr)) __ret;					\
-	__typeof__(*(ptr)) __old = (old);				\
-	__typeof__(*(ptr)) __new = (new);				\
-	switch (size) {							\
-	case __X86_CASE_B:						\
-	{								\
-		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
-		asm volatile(lock "cmpxchgb %2,%1"			\
-			     : "=a" (__ret), "+m" (*__ptr)		\
-			     : "q" (__new), "0" (__old)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_W:						\
-	{								\
-		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
-		asm volatile(lock "cmpxchgw %2,%1"			\
-			     : "=a" (__ret), "+m" (*__ptr)		\
-			     : "r" (__new), "0" (__old)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_L:						\
-	{								\
-		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
-		asm volatile(lock "cmpxchgl %2,%1"			\
-			     : "=a" (__ret), "+m" (*__ptr)		\
-			     : "r" (__new), "0" (__old)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_Q:						\
-	{								\
-		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
-		asm volatile(lock "cmpxchgq %2,%1"			\
-			     : "=a" (__ret), "+m" (*__ptr)		\
-			     : "r" (__new), "0" (__old)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	default:							\
-		__cmpxchg_wrong_size();					\
-	}								\
-	__ret;								\
-})
-
+#define __raw_cmpxchg(ptr, old, new, size, lock)                     \
+	({                                                           \
+		__typeof__(*(ptr)) __ret;                            \
+		__typeof__(*(ptr)) __old = (old);                    \
+		__typeof__(*(ptr)) __new = (new);                    \
+		switch (size) {                                      \
+		case __X86_CASE_B:                                   \
+		case __X86_CASE_W:                                   \
+		case __X86_CASE_L:                                   \
+		case __X86_CASE_Q: {                                 \
+			volatile __typeof__(__old) *__ptr =          \
+				(volatile __typeof__(__old) *)(ptr); \
+			__typeof__(__old) __oldval = *__ptr;         \
+			if (__oldval == __old)                       \
+				*__ptr = __new;                      \
+			__ret = __oldval;                            \
+			break;                                       \
+		}                                                    \
+		default:                                             \
+			__cmpxchg_wrong_size();                      \
+		}                                                    \
+		__ret;                                               \
+	})
 #define __cmpxchg(ptr, old, new, size)					\
 	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
 
