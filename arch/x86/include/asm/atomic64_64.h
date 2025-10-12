@@ -49,16 +49,17 @@ static __always_inline void arch_atomic64_inc(atomic64_t *v)
 }
 #define arch_atomic64_inc arch_atomic64_inc
 
-	static __always_inline void
-	arch_atomic64_dec(atomic64_t *v)
+static __always_inline void arch_atomic64_dec(atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "decq %0"
-		     : "=m" (v->counter)
-		     : "m" (v->counter) : "memory");
+	s64 __tmp = __READ_ONCE(v->counter);
+
+	__tmp--;
+	__WRITE_ONCE(v->counter, __tmp);
 }
 #define arch_atomic64_dec arch_atomic64_dec
 
-static __always_inline bool arch_atomic64_dec_and_test(atomic64_t *v)
+	static __always_inline bool
+	arch_atomic64_dec_and_test(atomic64_t *v)
 {
 	return GEN_UNARY_RMWcc(LOCK_PREFIX "decq", v->counter, e);
 }
