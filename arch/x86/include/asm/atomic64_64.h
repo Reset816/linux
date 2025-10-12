@@ -58,8 +58,7 @@ static __always_inline void arch_atomic64_dec(atomic64_t *v)
 }
 #define arch_atomic64_dec arch_atomic64_dec
 
-	static __always_inline bool
-	arch_atomic64_dec_and_test(atomic64_t *v)
+static __always_inline bool arch_atomic64_dec_and_test(atomic64_t *v)
 {
 	return GEN_UNARY_RMWcc(LOCK_PREFIX "decq", v->counter, e);
 }
@@ -101,13 +100,15 @@ static __always_inline s64 arch_atomic64_fetch_sub(s64 i, atomic64_t *v)
 }
 #define arch_atomic64_fetch_sub arch_atomic64_fetch_sub
 
-static __always_inline s64 arch_atomic64_cmpxchg(atomic64_t *v, s64 old, s64 new)
+static __always_inline s64 arch_atomic64_cmpxchg(atomic64_t *v, s64 old,
+						 s64 new)
 {
 	return arch_cmpxchg(&v->counter, old, new);
 }
 #define arch_atomic64_cmpxchg arch_atomic64_cmpxchg
 
-static __always_inline bool arch_atomic64_try_cmpxchg(atomic64_t *v, s64 *old, s64 new)
+static __always_inline bool arch_atomic64_try_cmpxchg(atomic64_t *v, s64 *old,
+						      s64 new)
 {
 	return arch_try_cmpxchg(&v->counter, old, new);
 }
@@ -121,12 +122,19 @@ static __always_inline s64 arch_atomic64_xchg(atomic64_t *v, s64 new)
 
 static __always_inline void arch_atomic64_and(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "andq %1,%0"
-			: "+m" (v->counter)
-			: "er" (i)
-			: "memory");
-}
+	s64 old, new_val;
 
+	old = __READ_ONCE(v->counter);
+	for (;;) {
+		s64 prev;
+
+		new_val = old & i;
+		prev = arch_cmpxchg(&v->counter, old, new_val);
+		if (prev == old)
+			break;
+		old = prev;
+	}
+}
 static __always_inline s64 arch_atomic64_fetch_and(s64 i, atomic64_t *v)
 {
 	s64 val = arch_atomic64_read(v);
