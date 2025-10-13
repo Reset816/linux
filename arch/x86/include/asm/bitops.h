@@ -94,19 +94,33 @@ static __always_inline void arch___set_bit(unsigned long nr,
 	value |= mask;
 	*word_addr = value;
 }
-static __always_inline void
-arch_clear_bit(long nr, volatile unsigned long *addr)
+static __always_inline void arch_clear_bit(long nr,
+					   volatile unsigned long *addr)
 {
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "andb %b1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" (~CONST_MASK(nr)));
+		unsigned long bit = (unsigned long)nr;
+		volatile unsigned char *byte_addr;
+		unsigned char mask;
+		unsigned char val;
+
+		byte_addr = (volatile unsigned char *)addr;
+		byte_addr += (bit >> 3);
+		mask = (unsigned char)~(1U << (bit & 7));
+		val = (unsigned char)*byte_addr;
+		val &= mask;
+		*byte_addr = val;
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btr) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		unsigned long index =
+			(unsigned long)nr / (sizeof(unsigned long) * 8);
+		unsigned long bit_pos = (unsigned long)nr &
+					((sizeof(unsigned long) * 8) - 1);
+		unsigned long mask = 1UL << bit_pos;
+		volatile unsigned long *word_addr = addr + index;
+		unsigned long value = *word_addr;
+		value &= ~mask;
+		*word_addr = value;
 	}
 }
-
 static __always_inline void
 arch_clear_bit_unlock(long nr, volatile unsigned long *addr)
 {
