@@ -390,31 +390,50 @@ static __always_inline int variable_ffs(int x)
 	int r;
 
 #ifdef CONFIG_X86_64
-	/*
-	 * AMD64 says BSFL won't clobber the dest reg if x==0; Intel64 says the
-	 * dest reg is undefined if x==0, but their CPU architect says its
-	 * value is written to set it to the same as before, except that the
-	 * top 32 bits will be cleared.
-	 *
-	 * We cannot do this on 32 bits because at the very least some
-	 * 486 CPUs did not behave this way.
-	 */
-	asm("bsfl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
+	if (x == 0) {
+		r = -1;
+	} else {
+		unsigned int ux = (unsigned int)x;
+		int idx = 0;
+
+		while ((ux & 1U) == 0U) {
+			ux >>= 1;
+			idx++;
+		}
+
+		r = idx;
+	}
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsfl %1,%0\n\t"
-	    "cmovzl %2,%0"
-	    : "=&r" (r) : "rm" (x), "r" (-1));
+	if (x == 0) {
+		r = -1;
+	} else {
+		unsigned int ux = (unsigned int)x;
+		int idx = 0;
+
+		while ((ux & 1U) == 0U) {
+			ux >>= 1;
+			idx++;
+		}
+
+		r = idx;
+	}
 #else
-	asm("bsfl %1,%0\n\t"
-	    "jnz 1f\n\t"
-	    "movl $-1,%0\n"
-	    "1:" : "=r" (r) : "rm" (x));
+	if (x == 0) {
+		r = -1;
+	} else {
+		unsigned int ux = (unsigned int)x;
+		int idx = 0;
+
+		while ((ux & 1U) == 0U) {
+			ux >>= 1;
+			idx++;
+		}
+
+		r = idx;
+	}
 #endif
 	return r + 1;
 }
-
 /**
  * ffs - find first set bit in word
  * @x: the word to search
