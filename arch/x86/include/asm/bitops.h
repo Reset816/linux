@@ -466,31 +466,20 @@ static __always_inline int fls(unsigned int x)
 		return x ? 32 - __builtin_clz(x) : 0;
 
 #ifdef CONFIG_X86_64
-	/*
-	 * AMD64 says BSRL won't clobber the dest reg if x==0; Intel64 says the
-	 * dest reg is undefined if x==0, but their CPU architect says its
-	 * value is written to set it to the same as before, except that the
-	 * top 32 bits will be cleared.
-	 *
-	 * We cannot do this on 32 bits because at the very least some
-	 * 486 CPUs did not behave this way.
-	 */
-	asm("bsrl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
+	r = -1;
+	if (x != 0)
+		r = 31 - __builtin_clz(x);
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsrl %1,%0\n\t"
-	    "cmovzl %2,%0"
-	    : "=&r" (r) : "rm" (x), "rm" (-1));
+	r = -1;
+	if (x != 0)
+		r = 31 - __builtin_clz(x);
 #else
-	asm("bsrl %1,%0\n\t"
-	    "jnz 1f\n\t"
-	    "movl $-1,%0\n"
-	    "1:" : "=r" (r) : "rm" (x));
+	r = -1;
+	if (x != 0)
+		r = 31 - __builtin_clz(x);
 #endif
 	return r + 1;
 }
-
 /**
  * fls64 - find last set bit in a 64-bit word
  * @x: the word to search
