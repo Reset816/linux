@@ -77,12 +77,23 @@ static __always_inline void arch_set_bit(long nr, volatile unsigned long *addr)
 		*word_addr = value;
 	}
 }
-static __always_inline void
-arch___set_bit(unsigned long nr, volatile unsigned long *addr)
+static __always_inline void arch___set_bit(unsigned long nr,
+					   volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(bts) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
-}
+	unsigned long index;
+	unsigned long bit_pos;
+	unsigned long mask;
+	volatile unsigned long *word_addr;
+	unsigned long value;
 
+	index = nr / (sizeof(unsigned long) * 8);
+	bit_pos = nr & ((sizeof(unsigned long) * 8) - 1);
+	mask = 1UL << bit_pos;
+	word_addr = addr + index;
+	value = *word_addr;
+	value |= mask;
+	*word_addr = value;
+}
 static __always_inline void
 arch_clear_bit(long nr, volatile unsigned long *addr)
 {
