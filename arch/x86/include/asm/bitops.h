@@ -216,14 +216,18 @@ static __always_inline bool
 arch___test_and_set_bit(unsigned long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
+	unsigned long offset;
+	unsigned long mask;
+	unsigned long value;
 
-	asm(__ASM_SIZE(bts) " %2,%1"
-	    CC_SET(c)
-	    : CC_OUT(c) (oldbit)
-	    : ADDR, "Ir" (nr) : "memory");
+	offset = nr / (sizeof(unsigned long) * 8UL);
+	mask = 1UL << (nr % (sizeof(unsigned long) * 8UL));
+	value = addr[offset];
+	oldbit = (value & mask) != 0;
+	value |= mask;
+	addr[offset] = value;
 	return oldbit;
 }
-
 static __always_inline bool
 arch_test_and_clear_bit(long nr, volatile unsigned long *addr)
 {
