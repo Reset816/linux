@@ -379,12 +379,9 @@ static __always_inline unsigned long __fls(unsigned long word)
 	if (__builtin_constant_p(word))
 		return BITS_PER_LONG - 1 - __builtin_clzl(word);
 
-	asm("bsr %1,%0"
-	    : "=r" (word)
-	    : "rm" (word));
+	word = BITS_PER_LONG - 1 - __builtin_clzl(word);
 	return word;
 }
-
 #undef ADDR
 
 #ifdef __KERNEL__
