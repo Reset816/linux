@@ -247,13 +247,18 @@ arch___test_and_clear_bit(unsigned long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm volatile(__ASM_SIZE(btr) " %2,%1"
-		     CC_SET(c)
-		     : CC_OUT(c) (oldbit)
-		     : ADDR, "Ir" (nr) : "memory");
+	unsigned long bits_per_long = sizeof(unsigned long) * 8;
+	unsigned long word_index = nr / bits_per_long;
+	unsigned long bit_index = nr % bits_per_long;
+	unsigned long mask = 1UL << bit_index;
+	volatile unsigned long *p = addr + word_index;
+	unsigned long val = *p;
+
+	oldbit = (val & mask) != 0;
+	val &= ~mask;
+	*p = val;
 	return oldbit;
 }
-
 static __always_inline bool
 arch___test_and_change_bit(unsigned long nr, volatile unsigned long *addr)
 {
