@@ -332,12 +332,21 @@ arch_test_bit_acquire(unsigned long nr, const volatile unsigned long *addr)
 
 static __always_inline unsigned long variable__ffs(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "rm" (word));
+	unsigned long __tmp = word;
+	unsigned long __result;
+
+	if (!__tmp) {
+		__result = 0;
+	} else {
+		__result = 0;
+		while ((__tmp & 1UL) == 0) {
+			__tmp >>= 1;
+			__result++;
+		}
+	}
+	word = __result;
 	return word;
 }
-
 /**
  * __ffs - find first set bit in word
  * @word: The word to search
