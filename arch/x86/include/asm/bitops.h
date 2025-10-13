@@ -360,12 +360,19 @@ static __always_inline unsigned long variable__ffs(unsigned long word)
 
 static __always_inline unsigned long variable_ffz(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "r" (~word));
+	unsigned long inverted = ~word;
+	unsigned long result = 0;
+
+	if (inverted != 0UL) {
+		while ((inverted & 1UL) == 0UL) {
+			inverted >>= 1;
+			result++;
+		}
+	}
+
+	word = result;
 	return word;
 }
-
 /**
  * ffz - find first zero bit in word
  * @word: The word to search
