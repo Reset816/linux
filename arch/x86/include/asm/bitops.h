@@ -300,18 +300,22 @@ constant_test_bit_acquire(long nr, const volatile unsigned long *addr)
 
 	return oldbit;
 }
-static __always_inline bool variable_test_bit(long nr, volatile const unsigned long *addr)
+static __always_inline bool
+variable_test_bit(long nr, volatile const unsigned long *addr)
 {
 	bool oldbit;
 
-	asm volatile(__ASM_SIZE(bt) " %2,%1"
-		     CC_SET(c)
-		     : CC_OUT(c) (oldbit)
-		     : "m" (*(unsigned long *)addr), "Ir" (nr) : "memory");
+	{
+		unsigned long bitnr = (unsigned long)nr;
+		unsigned long word_index = bitnr / BITS_PER_LONG;
+		unsigned long bit_index = bitnr & (BITS_PER_LONG - 1);
+		unsigned long value = addr[word_index];
+
+		oldbit = ((value >> bit_index) & 1UL) != 0;
+	}
 
 	return oldbit;
 }
-
 static __always_inline bool
 arch_test_bit(unsigned long nr, const volatile unsigned long *addr)
 {
