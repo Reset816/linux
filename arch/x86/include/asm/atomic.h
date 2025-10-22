@@ -156,10 +156,7 @@ static __always_inline int arch_atomic_fetch_or(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_xor(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "xorl %1,%0"
-			: "+m" (v->counter)
-			: "ir" (i)
-			: "memory");
+	v->counter ^= i;
 }
 
 static __always_inline int arch_atomic_fetch_xor(int i, atomic_t *v)
