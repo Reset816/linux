@@ -329,9 +329,18 @@ arch_test_bit_acquire(unsigned long nr, const volatile unsigned long *addr)
 
 static __always_inline unsigned long variable__ffs(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "rm" (word));
+	unsigned long __tmp = word;
+	unsigned long __index = 0;
+
+	if (__tmp != 0) {
+		while ((__tmp & 1UL) == 0) {
+			__tmp >>= 1;
+			__index++;
+		}
+		word = __index;
+	} else {
+		word = 0;
+	}
 	return word;
 }
 
