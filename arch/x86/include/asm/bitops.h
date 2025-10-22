@@ -207,11 +207,15 @@ static __always_inline bool
 arch___test_and_set_bit(unsigned long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
+	unsigned long bits_per_long = sizeof(unsigned long) * 8UL;
+	unsigned long word_index = nr / bits_per_long;
+	unsigned long bit_index = nr % bits_per_long;
+	volatile unsigned long *word_addr = addr + word_index;
+	unsigned long word_val = *word_addr;
 
-	asm(__ASM_SIZE(bts) " %2,%1"
-	    CC_SET(c)
-	    : CC_OUT(c) (oldbit)
-	    : ADDR, "Ir" (nr) : "memory");
+	oldbit = ((word_val >> bit_index) & 1UL) != 0UL;
+	word_val |= (1UL << bit_index);
+	*word_addr = word_val;
 	return oldbit;
 }
 
