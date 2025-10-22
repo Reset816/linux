@@ -48,17 +48,24 @@
 #define CONST_MASK_ADDR(nr, addr)	WBYTE_ADDR((void *)(addr) + ((nr)>>3))
 #define CONST_MASK(nr)			(1 << ((nr) & 7))
 
-static __always_inline void
-arch_set_bit(long nr, volatile unsigned long *addr)
+static __always_inline void arch_set_bit(long nr, volatile unsigned long *addr)
 {
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "orb %b1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" (CONST_MASK(nr))
-			: "memory");
+		unsigned long offset = (unsigned long)nr;
+		volatile unsigned long *p = addr + (offset / BITS_PER_LONG);
+		unsigned long mask = 1UL << (offset % BITS_PER_LONG);
+		unsigned long value = *p;
+
+		value |= mask;
+		*p = value;
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(bts) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		unsigned long offset = (unsigned long)nr;
+		volatile unsigned long *p = addr + (offset / BITS_PER_LONG);
+		unsigned long mask = 1UL << (offset % BITS_PER_LONG);
+		unsigned long value = *p;
+
+		value |= mask;
+		*p = value;
 	}
 }
 
