@@ -30,9 +30,7 @@ static __always_inline void arch_atomic_set(atomic_t *v, int i)
 
 static __always_inline void arch_atomic_add(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "addl %1,%0"
-		     : "+m" (v->counter)
-		     : "ir" (i) : "memory");
+	v->counter += i;
 }
 
 static __always_inline void arch_atomic_sub(int i, atomic_t *v)
