@@ -56,8 +56,7 @@ static __always_inline void arch_atomic_inc(atomic_t *v)
 
 static __always_inline void arch_atomic_dec(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "decl %0"
-		     : "+m" (v->counter) :: "memory");
+	v->counter = v->counter - 1;
 }
 #define arch_atomic_dec arch_atomic_dec
 
