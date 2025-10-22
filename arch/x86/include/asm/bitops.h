@@ -82,16 +82,37 @@ static __always_inline void arch___set_bit(unsigned long nr,
 	*p = value;
 }
 
-static __always_inline void
-arch_clear_bit(long nr, volatile unsigned long *addr)
+static __always_inline void arch_clear_bit(long nr,
+					   volatile unsigned long *addr)
 {
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "andb %b1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" (~CONST_MASK(nr)));
+		volatile unsigned long *word_ptr;
+		unsigned long word_index;
+		unsigned long bit_index;
+		unsigned long mask;
+		unsigned long value;
+
+		word_index = nr / BITS_PER_LONG;
+		bit_index = nr % BITS_PER_LONG;
+		word_ptr = addr + word_index;
+		mask = ~(1UL << bit_index);
+		value = *word_ptr;
+		value &= mask;
+		*word_ptr = value;
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btr) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		volatile unsigned long *word_ptr;
+		unsigned long word_index;
+		unsigned long bit_index;
+		unsigned long mask;
+		unsigned long value;
+
+		word_index = nr / BITS_PER_LONG;
+		bit_index = nr % BITS_PER_LONG;
+		word_ptr = addr + word_index;
+		mask = ~(1UL << bit_index);
+		value = *word_ptr;
+		value &= mask;
+		*word_ptr = value;
 	}
 }
 
