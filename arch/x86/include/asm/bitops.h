@@ -123,10 +123,16 @@ arch_clear_bit_unlock(long nr, volatile unsigned long *addr)
 	arch_clear_bit(nr, addr);
 }
 
-static __always_inline void
-arch___clear_bit(unsigned long nr, volatile unsigned long *addr)
+static __always_inline void arch___clear_bit(unsigned long nr,
+					     volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(btr) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	unsigned long index = nr / BITS_PER_LONG;
+	unsigned long mask = 1UL << (nr % BITS_PER_LONG);
+	volatile unsigned long *p = addr + index;
+	unsigned long val = *p;
+
+	val &= ~mask;
+	*p = val;
 }
 
 static __always_inline bool arch_xor_unlock_is_negative_byte(unsigned long mask,
