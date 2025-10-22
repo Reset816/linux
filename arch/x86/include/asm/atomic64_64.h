@@ -38,9 +38,7 @@ static __always_inline bool arch_atomic64_sub_and_test(s64 i, atomic64_t *v)
 
 static __always_inline void arch_atomic64_inc(atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "incq %0"
-		     : "=m" (v->counter)
-		     : "m" (v->counter) : "memory");
+	v->counter = v->counter + 1;
 }
 #define arch_atomic64_inc arch_atomic64_inc
 
