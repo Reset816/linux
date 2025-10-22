@@ -44,9 +44,7 @@ static __always_inline void arch_atomic64_inc(atomic64_t *v)
 
 static __always_inline void arch_atomic64_dec(atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "decq %0"
-		     : "=m" (v->counter)
-		     : "m" (v->counter) : "memory");
+	v->counter = v->counter - 1;
 }
 #define arch_atomic64_dec arch_atomic64_dec
 
