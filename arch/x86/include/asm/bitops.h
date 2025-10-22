@@ -357,9 +357,7 @@ static __always_inline unsigned long variable__ffs(unsigned long word)
 
 static __always_inline unsigned long variable_ffz(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "r" (~word));
+	word = __builtin_ctzl(~word);
 	return word;
 }
 
