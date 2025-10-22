@@ -292,14 +292,23 @@ constant_test_bit_acquire(long nr, const volatile unsigned long *addr)
 	return oldbit;
 }
 
-static __always_inline bool variable_test_bit(long nr, volatile const unsigned long *addr)
+static __always_inline bool
+variable_test_bit(long nr, volatile const unsigned long *addr)
 {
 	bool oldbit;
+#if BITS_PER_LONG == 64
+	long word_index = nr >> 6;
+	unsigned long bit_index = (unsigned long)nr & 63UL;
+#elif BITS_PER_LONG == 32
+	long word_index = nr >> 5;
+	unsigned long bit_index = (unsigned long)nr & 31UL;
+#else
+#error Unsupported BITS_PER_LONG value
+#endif
+	volatile const unsigned long *word_ptr = addr + word_index;
+	unsigned long word_val = word_ptr[0];
 
-	asm volatile(__ASM_SIZE(bt) " %2,%1"
-		     CC_SET(c)
-		     : CC_OUT(c) (oldbit)
-		     : "m" (*(unsigned long *)addr), "Ir" (nr) : "memory");
+	oldbit = ((word_val >> bit_index) & 1UL) != 0;
 
 	return oldbit;
 }
