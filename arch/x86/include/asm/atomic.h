@@ -46,8 +46,11 @@ static __always_inline bool arch_atomic_sub_and_test(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_inc(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "incl %0"
-		     : "+m" (v->counter) :: "memory");
+	int tmp;
+
+	tmp = v->counter;
+	tmp = tmp + 1;
+	v->counter = tmp;
 }
 #define arch_atomic_inc arch_atomic_inc
 
