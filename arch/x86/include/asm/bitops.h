@@ -169,25 +169,16 @@ static __always_inline void arch___change_bit(unsigned long nr,
 	*p = val;
 }
 
-static __always_inline void arch_change_bit(long nr,
-					    volatile unsigned long *addr)
+static __always_inline void
+arch_change_bit(long nr, volatile unsigned long *addr)
 {
 	if (__builtin_constant_p(nr)) {
-		unsigned long bit = (unsigned long)nr;
-		unsigned long word_index = bit / BITS_PER_LONG;
-		unsigned long mask = 1UL << (bit & (BITS_PER_LONG - 1));
-		volatile unsigned long *p = addr + word_index;
-		unsigned long value = *p;
-		value ^= mask;
-		*p = value;
+		asm volatile(LOCK_PREFIX "xorb %b1,%0"
+			: CONST_MASK_ADDR(nr, addr)
+			: "iq" (CONST_MASK(nr)));
 	} else {
-		unsigned long bit = (unsigned long)nr;
-		unsigned long word_index = bit / BITS_PER_LONG;
-		unsigned long mask = 1UL << (bit & (BITS_PER_LONG - 1));
-		volatile unsigned long *p = addr + word_index;
-		unsigned long value = *p;
-		value ^= mask;
-		*p = value;
+		asm volatile(LOCK_PREFIX __ASM_SIZE(btc) " %1,%0"
+			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
 	}
 }
 
