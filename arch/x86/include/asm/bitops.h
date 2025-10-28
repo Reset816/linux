@@ -276,16 +276,15 @@ static __always_inline bool constant_test_bit(long nr, const volatile unsigned l
 		(addr[nr >> _BITOPS_LONG_SHIFT])) != 0;
 }
 
-static __always_inline bool constant_test_bit_acquire(long nr, const volatile unsigned long *addr)
+static __always_inline bool
+constant_test_bit_acquire(long nr, const volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm volatile("testb %2,%1"
-		     CC_SET(nz)
-		     : CC_OUT(nz) (oldbit)
-		     : "m" (((unsigned char *)addr)[nr >> 3]),
-		       "i" (1 << (nr & 7))
-		     :"memory");
+	const volatile unsigned char *addr_bytes =
+		(const volatile unsigned char *)addr;
+
+	oldbit = (addr_bytes[nr >> 3] & (1 << (nr & 7))) != 0;
 
 	return oldbit;
 }
