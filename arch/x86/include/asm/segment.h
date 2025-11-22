@@ -325,13 +325,7 @@ extern const char xen_early_idt_handler_array[NUM_EXCEPTION_VECTORS][XEN_EARLY_I
 
 static inline void __loadsegment_fs(unsigned short value)
 {
-	asm volatile("						\n"
-		     "1:	movw %0, %%fs			\n"
-		     "2:					\n"
-
-		     _ASM_EXTABLE_TYPE(1b, 2b, EX_TYPE_CLEAR_FS)
-
-		     : : "rm" (value) : "memory");
+	(void)value;
 }
 
 /* __loadsegment_gs is intentionally undefined.  Use load_gs_index instead. */
