@@ -33,7 +33,7 @@ static inline unsigned long native_read_cr0(void)
 static __always_inline unsigned long native_read_cr2(void)
 {
 	unsigned long val;
-	asm volatile("mov %%cr2,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	val = 0;
 	return val;
 }
 
