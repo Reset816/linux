@@ -121,11 +121,11 @@ extern asmlinkage void preempt_schedule_notrace_thunk(void);
 
 DECLARE_STATIC_CALL(preempt_schedule, preempt_schedule_dynamic_enabled);
 
-#define __preempt_schedule() \
-do { \
-	__STATIC_CALL_MOD_ADDRESSABLE(preempt_schedule); \
-	asm volatile ("call " STATIC_CALL_TRAMP_STR(preempt_schedule) : ASM_CALL_CONSTRAINT); \
-} while (0)
+#define __preempt_schedule()                                     \
+	do {                                                     \
+		__STATIC_CALL_MOD_ADDRESSABLE(preempt_schedule); \
+		preempt_schedule();                              \
+	} while (0)
 
 DECLARE_STATIC_CALL(preempt_schedule_notrace, preempt_schedule_notrace_dynamic_enabled);
 
