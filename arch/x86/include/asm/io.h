@@ -53,10 +53,12 @@
 		return ret;                                        \
 	}
 
-#define build_mmio_write(name, size, type, reg, barrier) \
-static inline void name(type val, volatile void __iomem *addr) \
-{ asm volatile("mov" size " %0,%1": :reg (val), \
-"m" (*(volatile type __force *)addr) barrier); }
+#define build_mmio_write(name, size, type, reg, barrier)                       \
+	static inline void name(type val, volatile void __iomem *addr)         \
+	{                                                                      \
+		volatile type __force *__addr = (volatile type __force *)addr; \
+		__addr[0] = val;                                               \
+	}
 
 build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
 build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
