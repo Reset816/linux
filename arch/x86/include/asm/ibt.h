@@ -49,9 +49,7 @@ static inline __attribute_const__ u32 gen_endbr(void)
 	 * Generate ENDBR64 in a way that is sure to not result in
 	 * an ENDBR64 instruction as immediate.
 	 */
-	asm ( "mov $~0xfa1e0ff3, %[endbr]\n\t"
-	      "not %[endbr]\n\t"
-	       : [endbr] "=&r" (endbr) );
+	endbr = (u32)0xfa1e0ff3U;
 
 	return endbr;
 }
