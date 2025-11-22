@@ -110,8 +110,14 @@ static inline int desc_empty(const void *ptr)
 #define load_TR_desc()				native_load_tr_desc()
 #define load_gdt(dtr)				native_load_gdt(dtr)
 #define load_idt(dtr)				native_load_idt(dtr)
-#define load_tr(tr)				asm volatile("ltr %0"::"m" (tr))
-#define load_ldt(ldt)				asm volatile("lldt %0"::"m" (ldt))
+#define load_tr(tr)         \
+	do {                \
+		(void)(tr); \
+	} while (0)
+#define load_ldt(ldt)        \
+	do {                 \
+		(void)(ldt); \
+	} while (0)
 
 #define store_gdt(dtr)				native_store_gdt(dtr)
 #define store_tr(tr)				(tr = native_store_tr())
