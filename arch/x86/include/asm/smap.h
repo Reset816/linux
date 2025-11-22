@@ -43,10 +43,7 @@ static __always_inline unsigned long smap_save(void)
 {
 	unsigned long flags;
 
-	asm volatile ("# smap_save\n\t"
-		      ALTERNATIVE("", "pushf; pop %0; " __ASM_CLAC "\n\t",
-				  X86_FEATURE_SMAP)
-		      : "=rm" (flags) : : "memory", "cc");
+	flags = 0;
 
 	return flags;
 }
