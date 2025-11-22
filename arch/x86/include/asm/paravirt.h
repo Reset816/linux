@@ -652,23 +652,11 @@ bool __raw_callee_save___native_vcpu_is_preempted(long cpu);
  * functions.
  */
 #define PV_THUNK_NAME(func) "__raw_callee_save_" #func
-#define __PV_CALLEE_SAVE_REGS_THUNK(func, section)			\
-	extern typeof(func) __raw_callee_save_##func;			\
-									\
-	asm(".pushsection " section ", \"ax\";"				\
-	    ".globl " PV_THUNK_NAME(func) ";"				\
-	    ".type " PV_THUNK_NAME(func) ", @function;"			\
-	    ASM_FUNC_ALIGN						\
-	    PV_THUNK_NAME(func) ":"					\
-	    ASM_ENDBR							\
-	    FRAME_BEGIN							\
-	    PV_SAVE_ALL_CALLER_REGS					\
-	    "call " #func ";"						\
-	    PV_RESTORE_ALL_CALLER_REGS					\
-	    FRAME_END							\
-	    ASM_RET							\
-	    ".size " PV_THUNK_NAME(func) ", .-" PV_THUNK_NAME(func) ";"	\
-	    ".popsection")
+#define __PV_CALLEE_SAVE_REGS_THUNK(func, section)    \
+	extern typeof(func) __raw_callee_save_##func; \
+                                                      \
+	extern typeof(func) PV_THUNK_NAME(func)       \
+		__attribute__((alias(#func), section(section)));
 
 #define PV_CALLEE_SAVE_REGS_THUNK(func)			\
 	__PV_CALLEE_SAVE_REGS_THUNK(func, ".text")
