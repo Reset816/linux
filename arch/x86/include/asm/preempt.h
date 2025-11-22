@@ -129,11 +129,11 @@ DECLARE_STATIC_CALL(preempt_schedule, preempt_schedule_dynamic_enabled);
 
 DECLARE_STATIC_CALL(preempt_schedule_notrace, preempt_schedule_notrace_dynamic_enabled);
 
-#define __preempt_schedule_notrace() \
-do { \
-	__STATIC_CALL_MOD_ADDRESSABLE(preempt_schedule_notrace); \
-	asm volatile ("call " STATIC_CALL_TRAMP_STR(preempt_schedule_notrace) : ASM_CALL_CONSTRAINT); \
-} while (0)
+#define __preempt_schedule_notrace()                                     \
+	do {                                                             \
+		__STATIC_CALL_MOD_ADDRESSABLE(preempt_schedule_notrace); \
+		preempt_schedule_notrace();                              \
+	} while (0)
 
 #else /* PREEMPT_DYNAMIC */
 
