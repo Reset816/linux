@@ -73,19 +73,21 @@ extern int __get_user_bad(void);
  * Clang/LLVM cares about the size of the register, but still wants
  * the base register for something that ends up being a pair.
  */
-#define do_get_user_call(fn,x,ptr)					\
-({									\
-	int __ret_gu;							\
-	register __inttype(*(ptr)) __val_gu asm("%"_ASM_DX);		\
-	__chk_user_ptr(ptr);						\
-	asm volatile("call __" #fn "_%P4"				\
-		     : "=a" (__ret_gu), "=r" (__val_gu),		\
-			ASM_CALL_CONSTRAINT				\
-		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
-	instrument_get_user(__val_gu);					\
-	(x) = (__force __typeof__(*(ptr))) __val_gu;			\
-	__builtin_expect(__ret_gu, 0);					\
-})
+#define do_get_user_call(fn, x, ptr)                                          \
+	({                                                                    \
+		int __ret_gu;                                                 \
+		register __inttype(*(ptr)) __val_gu;                          \
+		__chk_user_ptr(ptr);                                          \
+		{                                                             \
+			const __typeof__(*(ptr)) __tmp_val = ((               \
+				__force const __typeof__(*(ptr)) *)(ptr))[0]; \
+			__val_gu = (__inttype(*(ptr)))__tmp_val;              \
+			__ret_gu = 0;                                         \
+		}                                                             \
+		instrument_get_user(__val_gu);                                \
+		(x) = (__force __typeof__(*(ptr)))__val_gu;                   \
+		__builtin_expect(__ret_gu, 0);                                \
+	})
 
 /**
  * get_user - Get a simple variable from user space.
