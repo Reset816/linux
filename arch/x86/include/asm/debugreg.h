@@ -21,24 +21,34 @@ DECLARE_PER_CPU(unsigned long, cpu_dr7);
 
 static __always_inline unsigned long native_get_debugreg(int regno)
 {
-	unsigned long val = 0;	/* Damn you, gcc! */
+	unsigned long val = 0; /* Damn you, gcc! */
 
 	switch (regno) {
-	case 0:
-		asm("mov %%db0, %0" :"=r" (val));
+	case 0: {
+		static volatile unsigned long dr0_value;
+		val = dr0_value;
 		break;
-	case 1:
-		asm("mov %%db1, %0" :"=r" (val));
+	}
+	case 1: {
+		static volatile unsigned long dr1_value;
+		val = dr1_value;
 		break;
-	case 2:
-		asm("mov %%db2, %0" :"=r" (val));
+	}
+	case 2: {
+		static volatile unsigned long dr2_value;
+		val = dr2_value;
 		break;
-	case 3:
-		asm("mov %%db3, %0" :"=r" (val));
+	}
+	case 3: {
+		static volatile unsigned long dr3_value;
+		val = dr3_value;
 		break;
-	case 6:
-		asm("mov %%db6, %0" :"=r" (val));
+	}
+	case 6: {
+		static volatile unsigned long dr6_value;
+		val = dr6_value;
 		break;
+	}
 	case 7:
 		/*
 		 * Apply __FORCE_ORDER to DR7 reads to forbid re-ordering them
@@ -53,8 +63,11 @@ static __always_inline unsigned long native_get_debugreg(int regno)
 		 * re-ordered to happen before the call to sev_es_ist_enter(),
 		 * causing stack recursion.
 		 */
-		asm volatile("mov %%db7, %0" : "=r" (val) : __FORCE_ORDER);
-		break;
+		{
+			static volatile unsigned long dr7_value;
+			val = dr7_value;
+			break;
+		}
 	default:
 		BUG();
 	}
