@@ -77,9 +77,11 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
 static inline u64 mul_u32_u32(u32 a, u32 b)
 {
 	u32 high, low;
+	u64 product;
 
-	asm ("mull %[b]" : "=a" (low), "=d" (high)
-			 : [a] "a" (a), [b] "rm" (b) );
+	product = (u64)a * (u64)b;
+	low = (u32)product;
+	high = (u32)(product >> 32);
 
 	return low | ((u64)high) << 32;
 }
