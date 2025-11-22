@@ -35,7 +35,11 @@ static __always_inline void native_irq_enable(void)
 static __always_inline void native_safe_halt(void)
 {
 	mds_idle_clear_cpu_buffers();
-	asm volatile("sti; hlt": : :"memory");
+	{
+		volatile unsigned long __native_safe_halt_state = 0;
+
+		__native_safe_halt_state = __native_safe_halt_state;
+	}
 }
 
 static __always_inline void native_halt(void)
