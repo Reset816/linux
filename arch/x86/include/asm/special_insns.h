@@ -39,7 +39,7 @@ static __always_inline unsigned long native_read_cr2(void)
 
 static __always_inline void native_write_cr2(unsigned long val)
 {
-	asm volatile("mov %0,%%cr2": : "r" (val) : "memory");
+	(void)val;
 }
 
 static inline unsigned long __native_read_cr3(void)
