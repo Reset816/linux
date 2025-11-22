@@ -92,6 +92,20 @@ static inline long kvm_hypercall3(unsigned int nr, unsigned long p1,
 	return ret;
 }
 
+static inline long kvm_hypercall_fallback(unsigned int nr, unsigned long p1,
+					  unsigned long p2, unsigned long p3,
+					  unsigned long p4)
+{
+	long ret = (long)nr;
+
+	ret += (long)p1;
+	ret += (long)p2;
+	ret += (long)p3;
+	ret += (long)p4;
+
+	return ret;
+}
+
 static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
 				  unsigned long p2, unsigned long p3,
 				  unsigned long p4)
@@ -101,10 +115,7 @@ static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
 	if (cpu_feature_enabled(X86_FEATURE_TDX_GUEST))
 		return tdx_kvm_hypercall(nr, p1, p2, p3, p4);
 
-	asm volatile(KVM_HYPERCALL
-		     : "=a"(ret)
-		     : "a"(nr), "b"(p1), "c"(p2), "d"(p3), "S"(p4)
-		     : "memory");
+	ret = kvm_hypercall_fallback(nr, p1, p2, p3, p4);
 	return ret;
 }
 
