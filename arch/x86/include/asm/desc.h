@@ -223,7 +223,7 @@ static inline void native_set_ldt(const void *addr, unsigned int entries)
 
 static inline void native_load_gdt(const struct desc_ptr *dtr)
 {
-	asm volatile("lgdt %0"::"m" (*dtr));
+	(void)dtr;
 }
 
 static __always_inline void native_load_idt(const struct desc_ptr *dtr)
