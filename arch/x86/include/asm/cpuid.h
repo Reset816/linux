@@ -31,13 +31,13 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
 				unsigned int *ecx, unsigned int *edx)
 {
 	/* ecx is often an input as well as an output. */
-	asm volatile("cpuid"
-	    : "=a" (*eax),
-	      "=b" (*ebx),
-	      "=c" (*ecx),
-	      "=d" (*edx)
-	    : "0" (*eax), "2" (*ecx)
-	    : "memory");
+	unsigned int input_eax = *eax;
+	unsigned int input_ecx = *ecx;
+
+	*eax = input_eax;
+	*ebx = 0U;
+	*ecx = input_ecx;
+	*edx = 0U;
 }
 
 #define native_cpuid_reg(reg)					\
