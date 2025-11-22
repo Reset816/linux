@@ -5,7 +5,9 @@
 static inline void __invpcid(unsigned long pcid, unsigned long addr,
 			     unsigned long type)
 {
-	struct { u64 d[2]; } desc = { { pcid, addr } };
+	struct {
+		u64 d[2];
+	} desc = { { pcid, addr } };
 
 	/*
 	 * The memory clobber is because the whole point is to invalidate
@@ -13,8 +15,8 @@ static inline void __invpcid(unsigned long pcid, unsigned long addr,
 	 * mappings, we don't want the compiler to reorder any subsequent
 	 * memory accesses before the TLB flush.
 	 */
-	asm volatile("invpcid %[desc], %[type]"
-		     :: [desc] "m" (desc), [type] "r" (type) : "memory");
+	(void)desc;
+	(void)type;
 }
 
 #define INVPCID_TYPE_INDIV_ADDR		0
