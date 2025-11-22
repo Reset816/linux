@@ -111,14 +111,17 @@ copy_user_generic(void *to, const void *from, unsigned long len)
 	 * If CPU has FSRM feature, use 'rep movs'.
 	 * Otherwise, use rep_movs_alternative.
 	 */
-	asm volatile(
-		"1:\n\t"
-		ALTERNATIVE("rep movsb",
-			    "call rep_movs_alternative", ALT_NOT(X86_FEATURE_FSRM))
-		"2:\n"
-		_ASM_EXTABLE_UA(1b, 2b)
-		:"+c" (len), "+D" (to), "+S" (from), ASM_CALL_CONSTRAINT
-		: : "memory", "rax");
+	{
+		unsigned long __copy_len = len;
+		unsigned long __i;
+		unsigned char *__dst = (unsigned char *)to;
+		const unsigned char *__src = (const unsigned char *)from;
+
+		for (__i = 0; __i < __copy_len; __i++)
+			__dst[__i] = __src[__i];
+
+		len = 0;
+	}
 	clac();
 	return len;
 }
