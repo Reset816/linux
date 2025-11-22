@@ -100,9 +100,9 @@ static inline bool local_add_negative(long i, local_t *l)
 static inline long local_add_return(long i, local_t *l)
 {
 	long __i = i;
-	asm volatile(_ASM_XADD "%0, %1;"
-		     : "+r" (i), "+m" (l->a.counter)
-		     : : "memory");
+	long __old = l->a.counter;
+	l->a.counter = __old + __i;
+	i = __old;
 	return i + __i;
 }
 
