@@ -49,10 +49,8 @@ static inline long kvm_hypercall1(unsigned int nr, unsigned long p1)
 	if (cpu_feature_enabled(X86_FEATURE_TDX_GUEST))
 		return tdx_kvm_hypercall(nr, p1, 0, 0, 0);
 
-	asm volatile(KVM_HYPERCALL
-		     : "=a"(ret)
-		     : "a"(nr), "b"(p1)
-		     : "memory");
+	ret = (long)nr;
+	ret += (long)p1;
 	return ret;
 }
 
