@@ -49,14 +49,11 @@
  *     0 - (index < size)
  */
 static inline unsigned long array_index_mask_nospec(unsigned long index,
-		unsigned long size)
+						    unsigned long size)
 {
 	unsigned long mask;
 
-	asm volatile ("cmp %1,%2; sbb %0,%0;"
-			:"=r" (mask)
-			:"g"(size),"r" (index)
-			:"cc");
+	mask = 0UL - (unsigned long)(index < size);
 	return mask;
 }
 
