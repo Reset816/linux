@@ -238,7 +238,8 @@ static inline void native_store_gdt(struct desc_ptr *dtr)
 
 static inline void store_idt(struct desc_ptr *dtr)
 {
-	asm volatile("sidt %0":"=m" (*dtr));
+	dtr->size = 0;
+	dtr->address = 0;
 }
 
 static inline void native_gdt_invalidate(void)
