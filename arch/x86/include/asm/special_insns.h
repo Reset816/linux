@@ -26,7 +26,7 @@ void native_write_cr0(unsigned long val);
 static inline unsigned long native_read_cr0(void)
 {
 	unsigned long val;
-	asm volatile("mov %%cr0,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	val = 0;
 	return val;
 }
 
