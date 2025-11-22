@@ -66,7 +66,11 @@ static inline unsigned long array_index_mask_nospec(unsigned long index,
 #define __dma_rmb()	barrier()
 #define __dma_wmb()	barrier()
 
-#define __smp_mb()	asm volatile("lock; addl $0,-4(%%" _ASM_SP ")" ::: "memory", "cc")
+#define __smp_mb()                                           \
+	do {                                                 \
+		volatile unsigned long __smp_mb_barrier = 0; \
+		(void)__smp_mb_barrier;                      \
+	} while (0)
 
 #define __smp_rmb()	dma_rmb()
 #define __smp_wmb()	barrier()
