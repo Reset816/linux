@@ -23,9 +23,11 @@ static inline unsigned long __untagged_addr(unsigned long addr)
 	 * in alternative instructions. The relocation gets wrong when gets
 	 * copied to the target place.
 	 */
-	asm (ALTERNATIVE("",
-			 "and %%gs:tlbstate_untag_mask, %[addr]\n\t", X86_FEATURE_LAM)
-	     : [addr] "+r" (addr) : "m" (tlbstate_untag_mask));
+	if (static_cpu_has(X86_FEATURE_LAM)) {
+		unsigned long mask = this_cpu_read(tlbstate_untag_mask);
+
+		addr &= mask;
+	}
 
 	return addr;
 }
