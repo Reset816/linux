@@ -58,7 +58,12 @@ do {									\
 
 #else
 
-#define _BUG_FLAGS(ins, flags, extra)  asm volatile(ins)
+#define _BUG_FLAGS(ins, flags, extra) \
+	do {                          \
+		(void)(ins);          \
+		(void)(flags);        \
+		(void)(extra);        \
+	} while (0)
 
 #endif /* CONFIG_GENERIC_BUG */
 
