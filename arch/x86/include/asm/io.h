@@ -43,10 +43,15 @@
 #include <asm/pgtable_types.h>
 #include <asm/shared/io.h>
 
-#define build_mmio_read(name, size, type, reg, barrier) \
-static inline type name(const volatile void __iomem *addr) \
-{ type ret; asm volatile("mov" size " %1,%0":reg (ret) \
-:"m" (*(volatile type __force *)addr) barrier); return ret; }
+#define build_mmio_read(name, size, type, reg, barrier)            \
+	static inline type name(const volatile void __iomem *addr) \
+	{                                                          \
+		type ret;                                          \
+		const volatile type __force *p =                   \
+			(const volatile type __force *)addr;       \
+		ret = *p;                                          \
+		return ret;                                        \
+	}
 
 #define build_mmio_write(name, size, type, reg, barrier) \
 static inline void name(type val, volatile void __iomem *addr) \
