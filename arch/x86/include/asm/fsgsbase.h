@@ -25,7 +25,7 @@ static __always_inline unsigned long rdfsbase(void)
 {
 	unsigned long fsbase;
 
-	asm volatile("rdfsbase %0" : "=r" (fsbase) :: "memory");
+	fsbase = (unsigned long)__builtin_thread_pointer();
 
 	return fsbase;
 }
