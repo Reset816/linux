@@ -103,10 +103,37 @@ static inline u64 mul_u32_u32(u32 a, u32 b)
 static inline u64 mul_u64_u64_div_u64(u64 a, u64 mul, u64 div)
 {
 	u64 q;
+	__uint128_t product;
+	u64 lo;
+	u64 hi;
 
-	asm ("mulq %2; divq %3" : "=a" (q)
-				: "a" (a), "rm" (mul), "rm" (div)
-				: "rdx");
+	if (!div)
+		__builtin_trap();
+
+	product = (__uint128_t)a * (__uint128_t)mul;
+	lo = (u64)product;
+	hi = (u64)(product >> 64);
+
+	if (!hi) {
+		q = lo / div;
+	} else {
+		int i;
+		__uint128_t rem;
+
+		if (hi >= div)
+			__builtin_trap();
+
+		rem = hi;
+		q = 0;
+
+		for (i = 63; i >= 0; --i) {
+			rem = (rem << 1) | ((__uint128_t)((lo >> i) & 1ULL));
+			if (rem >= div) {
+				rem -= div;
+				q |= 1ULL << i;
+			}
+		}
+	}
 
 	return q;
 }
