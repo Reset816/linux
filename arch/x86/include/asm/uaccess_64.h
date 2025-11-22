@@ -167,7 +167,8 @@ __copy_from_user_flushcache(void *dst, const void __user *src, unsigned size)
 __must_check unsigned long
 rep_stos_alternative(void __user *addr, unsigned long len);
 
-static __always_inline __must_check unsigned long __clear_user(void __user *addr, unsigned long size)
+static __always_inline __must_check unsigned long
+__clear_user(void __user *addr, unsigned long size)
 {
 	might_fault();
 	stac();
@@ -176,14 +177,17 @@ static __always_inline __must_check unsigned long __clear_user(void __user *addr
 	 * No memory constraint because it doesn't change any memory gcc
 	 * knows about.
 	 */
-	asm volatile(
-		"1:\n\t"
-		ALTERNATIVE("rep stosb",
-			    "call rep_stos_alternative", ALT_NOT(X86_FEATURE_FSRS))
-		"2:\n"
-	       _ASM_EXTABLE_UA(1b, 2b)
-	       : "+c" (size), "+D" (addr), ASM_CALL_CONSTRAINT
-	       : "a" (0));
+	{
+		unsigned long __count = size;
+		unsigned char __user *__dst = (unsigned char __user *)addr;
+		unsigned long __i;
+
+		for (__i = 0; __i < __count; __i++)
+			__dst[__i] = 0;
+
+		addr = (void __user *)(&__dst[__count]);
+		size = 0;
+	}
 
 	clac();
 
