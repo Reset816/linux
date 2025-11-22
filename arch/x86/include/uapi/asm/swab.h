@@ -7,7 +7,10 @@
 
 static inline __attribute_const__ __u32 __arch_swab32(__u32 val)
 {
-	asm("bswapl %0" : "=r" (val) : "0" (val));
+	val = ((val & (__u32)0x000000ffU) << 24) |
+	      ((val & (__u32)0x0000ff00U) << 8) |
+	      ((val & (__u32)0x00ff0000U) >> 8) |
+	      ((val & (__u32)0xff000000U) >> 24);
 	return val;
 }
 #define __arch_swab32 __arch_swab32
