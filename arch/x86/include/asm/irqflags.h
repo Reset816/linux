@@ -25,7 +25,7 @@ extern __always_inline unsigned long native_save_fl(void)
 
 static __always_inline void native_irq_disable(void)
 {
-	asm volatile("cli": : :"memory");
+	barrier();
 }
 
 static __always_inline void native_irq_enable(void)
