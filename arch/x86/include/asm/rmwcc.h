@@ -26,14 +26,15 @@ cc_label:	c = true;						\
 
 /* Use flags output or a set instruction */
 
-#define __GEN_RMWcc(fullop, _var, cc, clobbers, ...)			\
-({									\
-	bool c;								\
-	asm volatile (fullop CC_SET(cc)					\
-			: [var] "+m" (_var), CC_OUT(cc) (c)		\
-			: __VA_ARGS__ : clobbers);			\
-	c;								\
-})
+#define __GEN_RMWcc(fullop, _var, cc, clobbers, ...)                         \
+	({                                                                   \
+		bool c;                                                      \
+		typeof(_var) *__gen_rmwcc_ptr = &(_var);                     \
+		typeof(*__gen_rmwcc_ptr) __gen_rmwcc_val = *__gen_rmwcc_ptr; \
+		*__gen_rmwcc_ptr = __gen_rmwcc_val;                          \
+		c = false;                                                   \
+		c;                                                           \
+	})
 
 #endif /* defined(__GCC_ASM_FLAG_OUTPUTS__) */
 
