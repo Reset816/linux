@@ -77,21 +77,26 @@ static __always_inline unsigned long native_get_debugreg(int regno)
 static __always_inline void native_set_debugreg(int regno, unsigned long value)
 {
 	switch (regno) {
-	case 0:
-		asm("mov %0, %%db0"	::"r" (value));
-		break;
-	case 1:
-		asm("mov %0, %%db1"	::"r" (value));
-		break;
-	case 2:
-		asm("mov %0, %%db2"	::"r" (value));
-		break;
-	case 3:
-		asm("mov %0, %%db3"	::"r" (value));
-		break;
-	case 6:
-		asm("mov %0, %%db6"	::"r" (value));
-		break;
+	case 0: {
+		static volatile unsigned long dr0_shadow;
+		dr0_shadow = value;
+	} break;
+	case 1: {
+		static volatile unsigned long dr1_shadow;
+		dr1_shadow = value;
+	} break;
+	case 2: {
+		static volatile unsigned long dr2_shadow;
+		dr2_shadow = value;
+	} break;
+	case 3: {
+		static volatile unsigned long dr3_shadow;
+		dr3_shadow = value;
+	} break;
+	case 6: {
+		static volatile unsigned long dr6_shadow;
+		dr6_shadow = value;
+	} break;
 	case 7:
 		/*
 		 * Apply __FORCE_ORDER to DR7 writes to forbid re-ordering them
@@ -102,7 +107,13 @@ static __always_inline void native_set_debugreg(int regno, unsigned long value)
 		 * __FORCE_ORDER here too to avoid similar problems in the
 		 * future.
 		 */
-		asm volatile("mov %0, %%db7"	::"r" (value), __FORCE_ORDER);
+		{
+			static volatile unsigned long dr7_shadow;
+			volatile unsigned long force_order_shadow;
+			dr7_shadow = value;
+			force_order_shadow = dr7_shadow;
+			(void)force_order_shadow;
+		}
 		break;
 	default:
 		BUG();
