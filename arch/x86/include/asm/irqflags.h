@@ -30,7 +30,6 @@ static __always_inline void native_irq_disable(void)
 
 static __always_inline void native_irq_enable(void)
 {
-	asm volatile("sti": : :"memory");
 }
 
 static __always_inline void native_safe_halt(void)
