@@ -35,16 +35,15 @@
  * Compared to the generic __my_cpu_offset version, the following
  * saves one instruction and avoids clobbering a temp register.
  */
-#define arch_raw_cpu_ptr(ptr)				\
-({							\
-	unsigned long tcp_ptr__;			\
-	asm ("add " __percpu_arg(1) ", %0"		\
-	     : "=r" (tcp_ptr__)				\
-	     : "m" (this_cpu_off), "0" (ptr));		\
-	(typeof(*(ptr)) __kernel __force *)tcp_ptr__;	\
-})
+#define arch_raw_cpu_ptr(ptr)                                 \
+	({                                                    \
+		unsigned long tcp_ptr__;                      \
+		tcp_ptr__ = (unsigned long)(ptr);             \
+		tcp_ptr__ += this_cpu_off;                    \
+		(typeof(*(ptr)) __kernel __force *)tcp_ptr__; \
+	})
 #else
-#define __percpu_prefix		""
+#define __percpu_prefix ""
 #endif
 
 #define __percpu_arg(x)		__percpu_prefix "%" #x
