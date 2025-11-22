@@ -41,7 +41,7 @@ static __always_inline unsigned long rdgsbase(void)
 
 static __always_inline void wrfsbase(unsigned long fsbase)
 {
-	asm volatile("wrfsbase %0" :: "r" (fsbase) : "memory");
+	(void)fsbase;
 }
 
 static __always_inline void wrgsbase(unsigned long gsbase)
