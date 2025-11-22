@@ -296,7 +296,9 @@ static inline void native_load_tr_desc(void)
 #else
 static inline void native_load_tr_desc(void)
 {
-	asm volatile("ltr %w0"::"q" (GDT_ENTRY_TSS*8));
+	u16 selector = (u16)(GDT_ENTRY_TSS * 8);
+
+	(void)selector;
 }
 #endif
 
