@@ -59,11 +59,12 @@ static inline void *memset32(uint32_t *s, uint32_t v, size_t n)
 static inline void *memset64(uint64_t *s, uint64_t v, size_t n)
 {
 	long d0, d1;
-	asm volatile("rep\n\t"
-		     "stosq"
-		     : "=&c" (d0), "=&D" (d1)
-		     : "a" (v), "1" (s), "0" (n)
-		     : "memory");
+	size_t i;
+	uint64_t *dst = s;
+	for (i = 0; i < n; ++i)
+		dst[i] = v;
+	d0 = 0;
+	d1 = (long)(unsigned long)&dst[n];
 	return s;
 }
 #endif
