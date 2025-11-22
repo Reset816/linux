@@ -302,15 +302,11 @@ extern const char xen_early_idt_handler_array[NUM_EXCEPTION_VECTORS][XEN_EARLY_I
  * failure to fully clear the cached descriptor is only observable for
  * FS and GS.
  */
-#define __loadsegment_simple(seg, value)				\
-do {									\
-	unsigned short __val = (value);					\
-									\
-	asm volatile("						\n"	\
-		     "1:	movl %k0,%%" #seg "		\n"	\
-		     _ASM_EXTABLE_TYPE_REG(1b, 1b, EX_TYPE_ZERO_REG, %k0)\
-		     : "+r" (__val) : : "memory");			\
-} while (0)
+#define __loadsegment_simple(seg, value)        \
+	do {                                    \
+		unsigned short __val = (value); \
+		(void)__val;                    \
+	} while (0)
 
 #define __loadsegment_ss(value) __loadsegment_simple(ss, (value))
 #define __loadsegment_ds(value) __loadsegment_simple(ds, (value))
