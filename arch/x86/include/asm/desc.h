@@ -286,7 +286,10 @@ static inline void native_load_tr_desc(void)
 		load_direct_gdt(cpu);
 		restore = 1;
 	}
-	asm volatile("ltr %w0"::"q" (GDT_ENTRY_TSS*8));
+	{
+		unsigned short selector = (unsigned short)(GDT_ENTRY_TSS * 8);
+		(void)selector;
+	}
 	if (restore)
 		load_fixmap_gdt(cpu);
 }
