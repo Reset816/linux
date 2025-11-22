@@ -198,19 +198,26 @@ static inline void __set_tss_desc(unsigned cpu, unsigned int entry, struct x86_h
 
 #define set_tss_desc(cpu, addr) __set_tss_desc(cpu, GDT_ENTRY_TSS, addr)
 
+static inline void simulate_lldt_write(unsigned short selector)
+{
+	static volatile unsigned short ldt_selector_register;
+
+	ldt_selector_register = selector;
+}
+
 static inline void native_set_ldt(const void *addr, unsigned int entries)
 {
 	if (likely(entries == 0))
-		asm volatile("lldt %w0"::"q" (0));
+		simulate_lldt_write(0);
 	else {
 		unsigned cpu = smp_processor_id();
 		ldt_desc ldt;
 
 		set_tssldt_descriptor(&ldt, (unsigned long)addr, DESC_LDT,
 				      entries * LDT_ENTRY_SIZE - 1);
-		write_gdt_entry(get_cpu_gdt_rw(cpu), GDT_ENTRY_LDT,
-				&ldt, DESC_LDT);
-		asm volatile("lldt %w0"::"q" (GDT_ENTRY_LDT*8));
+		write_gdt_entry(get_cpu_gdt_rw(cpu), GDT_ENTRY_LDT, &ldt,
+				DESC_LDT);
+		simulate_lldt_write(GDT_ENTRY_LDT * 8);
 	}
 }
 
