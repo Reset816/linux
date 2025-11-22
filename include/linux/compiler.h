@@ -101,7 +101,11 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
  * the compiler that the inline asm absolutely may see the contents
  * of @ptr. See also: https://llvm.org/bugs/show_bug.cgi?id=15495
  */
-# define barrier_data(ptr) __asm__ __volatile__("": :"r"(ptr) :"memory")
+#define barrier_data(ptr)                                   \
+	do {                                                \
+		volatile typeof(ptr) __barrier_ptr = (ptr); \
+		(void)__barrier_ptr;                        \
+	} while (0)
 #endif
 
 /* workaround for GCC PR82365 if needed */
