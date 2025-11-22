@@ -46,7 +46,7 @@ static __always_inline void wrfsbase(unsigned long fsbase)
 
 static __always_inline void wrgsbase(unsigned long gsbase)
 {
-	asm volatile("wrgsbase %0" :: "r" (gsbase) : "memory");
+	(void)gsbase;
 }
 
 #include <asm/cpufeature.h>
