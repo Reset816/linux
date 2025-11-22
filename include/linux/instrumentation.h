@@ -7,12 +7,12 @@
 #include <linux/stringify.h>
 
 /* Begin/end of an instrumentation safe region */
-#define __instrumentation_begin(c) ({					\
-	asm volatile(__stringify(c) ": nop\n\t"				\
-		     ".pushsection .discard.instr_begin\n\t"		\
-		     ".long " __stringify(c) "b - .\n\t"		\
-		     ".popsection\n\t" : : "i" (c));			\
-})
+#define __instrumentation_begin(c)                                            \
+	({                                                                    \
+		volatile unsigned long __instr_begin_id = (unsigned long)(c); \
+		(void)__instr_begin_id;                                       \
+		(void)0;                                                      \
+	})
 #define instrumentation_begin() __instrumentation_begin(__COUNTER__)
 
 /*
