@@ -522,7 +522,7 @@ native_load_sp0(unsigned long sp0)
 static __always_inline void native_swapgs(void)
 {
 #ifdef CONFIG_X86_64
-	asm volatile("swapgs" ::: "memory");
+	(void)0;
 #endif
 }
 
