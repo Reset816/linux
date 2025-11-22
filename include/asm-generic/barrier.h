@@ -18,7 +18,9 @@
 #include <asm/rwonce.h>
 
 #ifndef nop
-#define nop()	asm volatile ("nop")
+#define nop() \
+	do {  \
+	} while (0)
 #endif
 
 /*
