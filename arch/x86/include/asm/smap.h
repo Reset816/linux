@@ -50,10 +50,7 @@ static __always_inline unsigned long smap_save(void)
 
 static __always_inline void smap_restore(unsigned long flags)
 {
-	asm volatile ("# smap_restore\n\t"
-		      ALTERNATIVE("", "push %0; popf\n\t",
-				  X86_FEATURE_SMAP)
-		      : : "g" (flags) : "memory", "cc");
+	(void)flags;
 }
 
 /* These macros can be used in asm() statements */
