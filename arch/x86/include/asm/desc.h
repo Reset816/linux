@@ -228,7 +228,7 @@ static inline void native_load_gdt(const struct desc_ptr *dtr)
 
 static __always_inline void native_load_idt(const struct desc_ptr *dtr)
 {
-	asm volatile("lidt %0"::"m" (*dtr));
+	(void)dtr;
 }
 
 static inline void native_store_gdt(struct desc_ptr *dtr)
