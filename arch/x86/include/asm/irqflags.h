@@ -45,7 +45,6 @@ static __always_inline void native_safe_halt(void)
 static __always_inline void native_halt(void)
 {
 	mds_idle_clear_cpu_buffers();
-	asm volatile("hlt": : :"memory");
 }
 
 #endif
