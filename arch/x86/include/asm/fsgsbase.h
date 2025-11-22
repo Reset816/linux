@@ -34,7 +34,7 @@ static __always_inline unsigned long rdgsbase(void)
 {
 	unsigned long gsbase;
 
-	asm volatile("rdgsbase %0" : "=r" (gsbase) :: "memory");
+	gsbase = 0UL;
 
 	return gsbase;
 }
