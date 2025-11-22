@@ -100,7 +100,8 @@ static __always_inline bool __preempt_count_dec_and_test(void)
  */
 static __always_inline bool should_resched(int preempt_offset)
 {
-	return unlikely(raw_cpu_read_4(pcpu_hot.preempt_count) == preempt_offset);
+	return unlikely(raw_cpu_read_4(pcpu_hot.preempt_count) ==
+			preempt_offset);
 }
 
 #ifdef CONFIG_PREEMPTION
@@ -108,14 +109,14 @@ static __always_inline bool should_resched(int preempt_offset)
 extern asmlinkage void preempt_schedule(void);
 extern asmlinkage void preempt_schedule_thunk(void);
 
-#define preempt_schedule_dynamic_enabled	preempt_schedule_thunk
-#define preempt_schedule_dynamic_disabled	NULL
+#define preempt_schedule_dynamic_enabled preempt_schedule_thunk
+#define preempt_schedule_dynamic_disabled NULL
 
 extern asmlinkage void preempt_schedule_notrace(void);
 extern asmlinkage void preempt_schedule_notrace_thunk(void);
 
-#define preempt_schedule_notrace_dynamic_enabled	preempt_schedule_notrace_thunk
-#define preempt_schedule_notrace_dynamic_disabled	NULL
+#define preempt_schedule_notrace_dynamic_enabled preempt_schedule_notrace_thunk
+#define preempt_schedule_notrace_dynamic_disabled NULL
 
 #ifdef CONFIG_PREEMPT_DYNAMIC
 
@@ -127,7 +128,8 @@ DECLARE_STATIC_CALL(preempt_schedule, preempt_schedule_dynamic_enabled);
 		preempt_schedule();                              \
 	} while (0)
 
-DECLARE_STATIC_CALL(preempt_schedule_notrace, preempt_schedule_notrace_dynamic_enabled);
+DECLARE_STATIC_CALL(preempt_schedule_notrace,
+		    preempt_schedule_notrace_dynamic_enabled);
 
 #define __preempt_schedule_notrace()                                     \
 	do {                                                             \
@@ -137,11 +139,15 @@ DECLARE_STATIC_CALL(preempt_schedule_notrace, preempt_schedule_notrace_dynamic_e
 
 #else /* PREEMPT_DYNAMIC */
 
-#define __preempt_schedule() \
-	asm volatile ("call preempt_schedule_thunk" : ASM_CALL_CONSTRAINT);
+#define __preempt_schedule()              \
+	do {                              \
+		preempt_schedule_thunk(); \
+	} while (0)
 
-#define __preempt_schedule_notrace() \
-	asm volatile ("call preempt_schedule_notrace_thunk" : ASM_CALL_CONSTRAINT);
+#define __preempt_schedule_notrace()              \
+	do {                                      \
+		preempt_schedule_notrace_thunk(); \
+	} while (0)
 
 #endif /* PREEMPT_DYNAMIC */
 
