@@ -70,10 +70,17 @@ static inline void __const_sigaddset(sigset_t *set, int _sig)
 	 ? __const_sigdelset((set), (sig))  \
 	 : __gen_sigdelset((set), (sig)))
 
-
 static inline void __gen_sigdelset(sigset_t *set, int _sig)
 {
-	asm("btrl %1,%0" : "+m"(*set) : "Ir"(_sig - 1) : "cc");
+	int bit = _sig - 1;
+	unsigned long *bitmap = (unsigned long *)set;
+	unsigned long bits_per_word =
+		(unsigned long)(sizeof(unsigned long) << 3);
+	unsigned long word = (unsigned long)(bit / (int)bits_per_word);
+	unsigned long offset = (unsigned long)(bit % (int)bits_per_word);
+	unsigned long mask = 1UL << offset;
+
+	bitmap[word] &= ~mask;
 }
 
 static inline void __const_sigdelset(sigset_t *set, int _sig)
