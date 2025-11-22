@@ -138,7 +138,10 @@ static inline void paravirt_free_ldt(struct desc_struct *ldt, unsigned entries)
 }
 #endif	/* CONFIG_PARAVIRT_XXL */
 
-#define store_ldt(ldt) asm("sldt %0" : "=m"(ldt))
+#define store_ldt(ldt)     \
+	do {               \
+		(ldt) = 0; \
+	} while (0)
 
 static inline void native_write_idt_entry(gate_desc *idt, int entry, const gate_desc *gate)
 {
