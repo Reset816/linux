@@ -21,6 +21,7 @@
 #include <linux/memory.h>
 #include <linux/mm.h>
 #include <linux/module.h>
+#include <linux/mycov.h> // mycov
 #include <linux/printk.h>
 #include <linux/sched.h>
 #include <linux/sched/task_stack.h>
@@ -33,8 +34,13 @@
 #include <linux/vmalloc.h>
 #include <linux/bug.h>
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/mycov_rw.h>
+
 #include "kasan.h"
 #include "../slab.h"
+
+#define OUT_BUF_SIZE 100
 
 /*
  * All functions below always inlined so compiler could
@@ -165,22 +171,46 @@ static __always_inline bool check_region_inline(const void *addr,
 						size_t size, bool write,
 						unsigned long ret_ip)
 {
-	if (!kasan_arch_is_ready())
+	unsigned long addr_val;
+	u64 hash_a, hash_b;
+	u32 hash;
+	int ret_ip_cnt;
+
+	if (my_state == 0) {
 		return true;
-
-	if (unlikely(size == 0))
+	}
+	if (current->kasan_depth != 0) {
 		return true;
-
-	if (unlikely(addr + size < addr))
-		return !kasan_report(addr, size, write, ret_ip);
-
-	if (unlikely(!addr_has_metadata(addr)))
-		return !kasan_report(addr, size, write, ret_ip);
-
-	if (likely(!memory_is_poisoned(addr, size)))
+	}
+	if (!write) {
 		return true;
+	}
 
-	return !kasan_report(addr, size, write, ret_ip);
+	// address
+	addr_val = (unsigned long)kasan_reset_tag((void *)addr);
+	if (is_kernel_core_data(addr_val) || is_kernel_rodata(addr_val) || __is_kernel_text(addr_val)) {
+		// blacklist
+		if (is_in_any_interval(addr_val)) {
+			return true;
+		}
+
+		// deduplication (by ret_ip + addr_val)
+		hash_a = ret_ip;
+		hash_b = addr_val;
+		hash_a ^= hash_b + 0x9e3779b97f4a7c15ULL + (hash_a << 6) + (hash_a >> 2);
+		hash = hash_64(hash_a, MYCOV_RW_RET_IP_HASHTABLE_BITS);
+		ret_ip_cnt = atomic_fetch_add(1, &rw_ret_ip_counter[hash]);
+		if (ret_ip_cnt > 0) {
+			return true;
+		}
+
+		// report
+		kasan_disable_current();
+		trace_mycov_rw_write(ret_ip, addr_val, size);
+		kasan_enable_current();
+	}
+
+	return true;
 }
 
 bool kasan_check_range(const void *addr, size_t size, bool write,

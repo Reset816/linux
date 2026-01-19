@@ -98,6 +98,7 @@
 #include <linux/kcsan.h>
 #include <linux/init_syscalls.h>
 #include <linux/stackdepot.h>
+#include <linux/mycov.h>
 #include <linux/randomize_kstack.h>
 #include <net/net_namespace.h>
 
@@ -124,6 +125,8 @@ bool early_boot_irqs_disabled __read_mostly;
 
 enum system_states system_state __read_mostly;
 EXPORT_SYMBOL(system_state);
+int my_state = 0;
+atomic_t *rw_ret_ip_counter;
 
 /*
  * Boot command-line arguments
@@ -1429,6 +1432,15 @@ void __weak free_initmem(void)
 	free_initmem_default(POISON_FREE_INITMEM);
 }
 
+static void __ref mycov_init(void)
+{
+	rw_ret_ip_counter = (atomic_t *)__vmalloc(BIT(MYCOV_RW_RET_IP_HASHTABLE_BITS) * sizeof(atomic_t), GFP_KERNEL | __GFP_ZERO);
+	if (!rw_ret_ip_counter) {
+		panic("Cannot allocate rw_ret_ip_counter");
+	}
+	my_state = 1;
+}
+
 static int __ref kernel_init(void *unused)
 {
 	int ret;
@@ -1449,6 +1461,7 @@ static int __ref kernel_init(void *unused)
 	exit_boot_config();
 	free_initmem();
 	mark_readonly();
+	mycov_init();
 
 	/*
 	 * Kernel mappings are now finalized - update the userspace page-table
@@ -1497,8 +1510,9 @@ static int __ref kernel_init(void *unused)
 	if (!try_to_run_init_process("/sbin/init") ||
 	    !try_to_run_init_process("/etc/init") ||
 	    !try_to_run_init_process("/bin/init") ||
-	    !try_to_run_init_process("/bin/sh"))
+	    !try_to_run_init_process("/bin/sh")) {
 		return 0;
+	}
 
 	panic("No working init found.  Try passing init= option to kernel. "
 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
