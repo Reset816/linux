@@ -3198,6 +3198,19 @@ config TEST_MEMINIT
 
 	  If unsure, say N.
 
+config TEST_MEMSET_RISCV
+	tristate "RISC-V kernel memset microbenchmark"
+	depends on RISCV && KPROBES
+	help
+	  Build a test module that benchmarks kernel memset() and reports
+	  whether the tested calls executed the Zicboz cbo.zero path inside
+	  arch/riscv/lib/memset.S.
+
+	  The module uses a kprobe on __memset's cbo.zero instruction to
+	  provide an execution counter during each test case.
+
+	  If unsure, say N.
+
 config TEST_HMM
 	tristate "Test HMM (Heterogeneous Memory Management)"
 	depends on TRANSPARENT_HUGEPAGE

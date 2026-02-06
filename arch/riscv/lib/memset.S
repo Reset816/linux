@@ -6,11 +6,64 @@
 
 #include <linux/linkage.h>
 #include <asm/asm.h>
+#include <asm/alternative-macros.h>
+#include <asm/hwcap.h>
+#include <asm/insn-def.h>
+
+#define CBOZ_MEMSET_THRESHOLD	128
+
+#define CBOZ_ALT(old, new)					\
+	ALTERNATIVE(old, new, 0,				\
+		    RISCV_ISA_EXT_ZICBOZ,			\
+		    CONFIG_RISCV_ISA_ZICBOZ)
 
 /* void *memset(void *, int, size_t) */
 SYM_FUNC_START(__memset)
 	move t0, a0  /* Preserve return value */
 
+#ifndef __DISABLE_ZICBOZ_MEMSET
+	/* C's memset() only uses the low byte of value */
+	andi a3, a1, 0xff
+	bnez a3, .Lscalar_memset
+
+	/* Avoid CBO setup overhead for small fills */
+	li a3, CBOZ_MEMSET_THRESHOLD
+	bltu a2, a3, .Lscalar_memset
+
+	CBOZ_ALT("j .Lscalar_memset", "nop")
+
+	/* t0: dst, a4: block_size, a5: end, a7: block-aligned end */
+	lw a4, riscv_cboz_block_size
+	add a5, t0, a2
+	addi a6, a4, -1
+	add a3, t0, a6
+	not a6, a6
+	and a3, a3, a6
+	and a7, a5, a6
+	bgeu a3, a7, .Lscalar_memset
+
+.Lcboz_head:
+	bgeu t0, a3, .Lcboz_body
+	sb zero, 0(t0)
+	addi t0, t0, 1
+	j .Lcboz_head
+
+.Lcboz_body:
+	CBO_ZERO(t0)
+	add t0, t0, a4
+	bltu t0, a7, .Lcboz_body
+
+.Lcboz_tail:
+	bgeu t0, a5, .Lmemset_done
+	sb zero, 0(t0)
+	addi t0, t0, 1
+	bltu t0, a5, .Lcboz_tail
+
+.Lmemset_done:
+	ret
+#endif
+
+.Lscalar_memset:
 	/* Defer to byte-oriented fill for small sizes */
 	sltiu a3, a2, 16
 	bnez a3, 4f
