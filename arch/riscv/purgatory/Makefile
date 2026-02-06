@@ -19,6 +19,7 @@ $(obj)/memcpy.o: $(srctree)/arch/riscv/lib/memcpy.S FORCE
 
 $(obj)/memset.o: $(srctree)/arch/riscv/lib/memset.S FORCE
 	$(call if_changed_rule,as_o_S)
+# purgatory is standalone and cannot resolve riscv_cboz_block_size from vmlinux.
 AFLAGS_memset.o += -D__DISABLE_ZICBOZ_MEMSET
 
 $(obj)/strcmp.o: $(srctree)/arch/riscv/lib/strcmp.S FORCE

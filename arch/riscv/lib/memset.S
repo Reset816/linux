@@ -6,16 +6,18 @@
 
 #include <linux/linkage.h>
 #include <asm/asm.h>
+
+#ifndef __DISABLE_ZICBOZ_MEMSET
 #include <asm/alternative-macros.h>
 #include <asm/hwcap.h>
 #include <asm/insn-def.h>
 
 #define CBOZ_MEMSET_THRESHOLD	128
 
-#define CBOZ_ALT(old, new)					\
-	ALTERNATIVE(old, new, 0,				\
-		    RISCV_ISA_EXT_ZICBOZ,			\
-		    CONFIG_RISCV_ISA_ZICBOZ)
+#define MEMSET_ZICBOZ_ALT(old, new)					\
+	__ALTERNATIVE_CFG(old, new, 0, RISCV_ISA_EXT_ZICBOZ,		\
+			  IS_ENABLED(CONFIG_RISCV_ISA_ZICBOZ))
+#endif
 
 /* void *memset(void *, int, size_t) */
 SYM_FUNC_START(__memset)
@@ -30,7 +32,7 @@ SYM_FUNC_START(__memset)
 	li a3, CBOZ_MEMSET_THRESHOLD
 	bltu a2, a3, .Lscalar_memset
 
-	CBOZ_ALT("j .Lscalar_memset", "nop")
+	MEMSET_ZICBOZ_ALT("j .Lscalar_memset", "nop")
 
 	/* t0: dst, a4: block_size, a5: end, a7: block-aligned end */
 	lw a4, riscv_cboz_block_size
