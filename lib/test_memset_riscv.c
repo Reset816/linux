@@ -23,6 +23,7 @@
 #include <linux/timekeeping.h>
 
 #include <asm/cacheflush.h>
+#include <asm/bug.h>
 #include <asm/cpufeature-macros.h>
 #include <asm/hwcap.h>
 
@@ -30,7 +31,7 @@
 
 #define CBO_ZERO_MASK		0xfff07fffU
 #define CBO_ZERO_MATCH		0x0040200fU
-#define CBO_SCAN_MAX_WORDS	128
+#define CBO_SCAN_MAX_BYTES	512
 
 static unsigned long bytes_per_case = 64UL * SZ_1M;
 module_param(bytes_per_case, ulong, 0644);
@@ -62,6 +63,8 @@ static unsigned int cbo_probe_off;
 static atomic64_t cbo_hits = ATOMIC64_INIT(0);
 static struct task_struct *bench_task;
 static bool probe_counting;
+static unsigned long probe_dst_start;
+static unsigned long probe_dst_end;
 
 static const size_t sizes[] = {
 	64, 96, 127, 128, 129, 256, 512, 1024, 4096, 65536,
@@ -78,29 +81,44 @@ static noinline void bench_memset_call(void *dst, int value, size_t len)
 
 static int cbo_probe_handler(struct kprobe *p, struct pt_regs *regs)
 {
-	if (READ_ONCE(probe_counting) && READ_ONCE(bench_task) == current)
-		atomic64_inc(&cbo_hits);
+	if (READ_ONCE(probe_counting) && READ_ONCE(bench_task) == current) {
+		unsigned long t0 = READ_ONCE(regs->t0);
+		unsigned long start = READ_ONCE(probe_dst_start);
+		unsigned long end = READ_ONCE(probe_dst_end);
+
+		if (t0 >= start && t0 < end)
+			atomic64_inc(&cbo_hits);
+	}
 
 	return 0;
 }
 
 static int find_cbo_path_probe_offset(unsigned long memset_addr, unsigned int *off)
 {
-	const u32 *insn = (const u32 *)memset_addr;
-	unsigned int i;
+	const u16 *insn16 = (const u16 *)memset_addr;
+	unsigned int pos = 0;
 
-	for (i = 0; i + 1 < CBO_SCAN_MAX_WORDS; i++) {
-		u32 v = READ_ONCE(insn[i]);
+	while (pos + sizeof(*insn16) <= CBO_SCAN_MAX_BYTES) {
+		u16 half = READ_ONCE(*insn16);
+		size_t insn_len = GET_INSN_LENGTH(half);
 
-		if ((v & CBO_ZERO_MASK) == CBO_ZERO_MATCH) {
-			/*
-			 * kprobes on RISC-V reject SYSTEM instructions, and
-			 * cbo.zero is a SYSTEM instruction. Probe the next
-			 * instruction ("add t0, t0, a4") in the same loop.
-			 */
-			*off = (i + 1) * sizeof(*insn);
-			return 0;
+		if (insn_len == sizeof(u32) &&
+		    pos + sizeof(u32) <= CBO_SCAN_MAX_BYTES) {
+			u32 v = READ_ONCE(*(const u32 *)insn16);
+
+			if ((v & CBO_ZERO_MASK) == CBO_ZERO_MATCH) {
+				/*
+				 * kprobes on RISC-V reject SYSTEM instructions, and
+				 * cbo.zero is a SYSTEM instruction. Probe the next
+				 * instruction in the same loop.
+				 */
+				*off = pos + insn_len;
+				return 0;
+			}
 		}
+
+		insn16 = (const u16 *)((const u8 *)insn16 + insn_len);
+		pos += insn_len;
 	}
 
 	return -ENOENT;
@@ -192,7 +210,10 @@ static void run_verify_case(void *dst, size_t len, u8 value, size_t off)
 	s64 hits_before = 0;
 	s64 hits_after = 0;
 	s64 hits_delta = 0;
+	unsigned long start = (unsigned long)dst;
+	unsigned long end;
 	bool expect = expect_zicboz_path(dst, value, len);
+	bool match;
 
 	migrate_disable();
 
@@ -202,6 +223,11 @@ static void run_verify_case(void *dst, size_t len, u8 value, size_t off)
 	if (cbo_probe_ready)
 		hits_before = atomic64_read(&cbo_hits);
 
+	if (check_add_overflow(start, len, &end))
+		end = start;
+
+	WRITE_ONCE(probe_dst_start, start);
+	WRITE_ONCE(probe_dst_end, end);
 	WRITE_ONCE(bench_task, current);
 	WRITE_ONCE(probe_counting, true);
 	barrier();
@@ -212,6 +238,8 @@ static void run_verify_case(void *dst, size_t len, u8 value, size_t off)
 	barrier();
 	WRITE_ONCE(probe_counting, false);
 	WRITE_ONCE(bench_task, NULL);
+	WRITE_ONCE(probe_dst_start, 0);
+	WRITE_ONCE(probe_dst_end, 0);
 
 	if (cbo_probe_ready)
 		hits_after = atomic64_read(&cbo_hits);
@@ -219,14 +247,14 @@ static void run_verify_case(void *dst, size_t len, u8 value, size_t off)
 	migrate_enable();
 
 	hits_delta = hits_after - hits_before;
+	match = expect ? (hits_delta > 0) : (hits_delta <= 0);
 
-	pr_info("verify len=%6zu val=0x%02x off=%4zu loops=%8llu expect_zicboz=%d probe_hits=%lld\n",
-		len, value, off, loops, expect, hits_delta);
-
-	if (expect && hits_delta <= 0)
-		pr_warn("verify mismatch: expected Zicboz but saw no probe hits\n");
-	if (!expect && hits_delta > 0)
-		pr_warn("verify mismatch: unexpected probe hits on non-Zicboz case\n");
+	if (match)
+		pr_info("verify len=%6zu val=0x%02x off=%4zu loops=%8llu expect_zicboz=%d probe_hits=%lld verify=match\n",
+			len, value, off, loops, expect, hits_delta);
+	else
+		pr_warn("verify len=%6zu val=0x%02x off=%4zu loops=%8llu expect_zicboz=%d probe_hits=%lld verify=mismatch\n",
+			len, value, off, loops, expect, hits_delta);
 }
 
 static void run_perf_case(void *dst, size_t len, u8 value, size_t off)
