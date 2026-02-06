@@ -157,6 +157,9 @@ static int setup_cbo_probe(void)
 
 static bool zicboz_hw_enabled(void)
 {
+	if (IS_ENABLED(CONFIG_RISCV_MEMSET_DISABLE_ZICBOZ))
+		return false;
+
 	if (!IS_ENABLED(CONFIG_RISCV_ISA_ZICBOZ))
 		return false;
 
@@ -321,12 +324,16 @@ static int __init test_memset_riscv_init(void)
 	if (!raw)
 		return -ENOMEM;
 
-	ret = setup_cbo_probe();
-	if (ret) {
-		pr_warn("failed to arm cbo.zero probe (%d)\n", ret);
-		if (require_probe) {
-			kfree(raw);
-			return ret;
+	if (IS_ENABLED(CONFIG_RISCV_MEMSET_DISABLE_ZICBOZ)) {
+		pr_info("zicboz memset optimization disabled by config; skip probe phase\n");
+	} else {
+		ret = setup_cbo_probe();
+		if (ret) {
+			pr_warn("failed to arm cbo.zero probe (%d)\n", ret);
+			if (require_probe) {
+				kfree(raw);
+				return ret;
+			}
 		}
 	}
 

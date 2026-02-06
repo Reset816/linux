@@ -36,6 +36,8 @@ SYM_FUNC_START(__memset)
 
 	/* t0: dst, a4: block_size, a5: end, a7: block-aligned end */
 	lw a4, riscv_cboz_block_size
+	/* No full CBO block can fit if len is smaller than block size */
+	bltu a2, a4, .Lscalar_memset
 	add a5, t0, a2
 	addi a6, a4, -1
 	add a3, t0, a6

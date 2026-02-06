@@ -836,6 +836,16 @@ config RISCV_ISA_ZICBOZ
 
 	   If you don't know what to do here, say Y.
 
+config RISCV_MEMSET_DISABLE_ZICBOZ
+	bool "Disable Zicboz optimization in memset()"
+	depends on RISCV_ISA_ZICBOZ
+	default n
+	help
+	   Disable the Zicboz-optimized path in arch/riscv/lib/memset.S.
+	   This is useful for A/B comparisons against the scalar memset path.
+
+	   If unsure, say N.
+
 config RISCV_ISA_ZICBOP
 	bool "Zicbop extension support for cache block prefetch"
 	depends on MMU

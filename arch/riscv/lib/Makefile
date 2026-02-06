@@ -3,6 +3,9 @@ lib-y			+= delay.o
 lib-y			+= memcpy.o
 lib-y			+= memset.o
 lib-y			+= memmove.o
+ifeq ($(CONFIG_RISCV_MEMSET_DISABLE_ZICBOZ),y)
+AFLAGS_memset.o		+= -D__DISABLE_ZICBOZ_MEMSET
+endif
 ifeq ($(CONFIG_KASAN_GENERIC)$(CONFIG_KASAN_SW_TAGS),)
 lib-y			+= strcmp.o
 lib-y			+= strlen.o
