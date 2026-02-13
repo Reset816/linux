@@ -98,6 +98,7 @@
 #include <linux/kcsan.h>
 #include <linux/init_syscalls.h>
 #include <linux/stackdepot.h>
+#include <linux/mycov.h>
 #include <linux/randomize_kstack.h>
 #include <net/net_namespace.h>
 
@@ -124,6 +125,11 @@ bool early_boot_irqs_disabled __read_mostly;
 
 enum system_states system_state __read_mostly;
 EXPORT_SYMBOL(system_state);
+int log_state = 0;
+atomic_t *rw_ret_ip_counter;
+atomic_t rw_ret_ip_counter_usage = ATOMIC_INIT(0);
+atomic_t *icall_counter;
+atomic_t icall_counter_usage = ATOMIC_INIT(0);
 
 /*
  * Boot command-line arguments
@@ -1429,6 +1435,19 @@ void __weak free_initmem(void)
 	free_initmem_default(POISON_FREE_INITMEM);
 }
 
+static void __ref mycov_init(void)
+{
+	rw_ret_ip_counter = (atomic_t *)__vmalloc(BIT(MYINST_RW_RET_IP_HASHTABLE_BITS) * sizeof(atomic_t), GFP_KERNEL | __GFP_ZERO);
+	if (!rw_ret_ip_counter) {
+		panic("Cannot allocate rw_ret_ip_counter");
+	}
+	icall_counter = (atomic_t *)__vmalloc(BIT(MYINST_ICALL_HASHTABLE_BITS) * sizeof(atomic_t), GFP_KERNEL | __GFP_ZERO);
+	if (!icall_counter) {
+		panic("Cannot allocate icall_counter");
+	}
+	log_state = 1;
+}
+
 static int __ref kernel_init(void *unused)
 {
 	int ret;
@@ -1449,6 +1468,8 @@ static int __ref kernel_init(void *unused)
 	exit_boot_config();
 	free_initmem();
 	mark_readonly();
+	pr_err("mark_readonly done\n");
+	mycov_init();
 
 	/*
 	 * Kernel mappings are now finalized - update the userspace page-table

@@ -49,6 +49,7 @@
 *.symversions
 *.tab.[ch]
 *.tar
+*.unopt.bc
 *.xz
 *.zst
 Module.symvers
