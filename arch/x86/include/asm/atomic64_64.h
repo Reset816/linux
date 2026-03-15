@@ -118,10 +118,7 @@ static __always_inline s64 arch_atomic64_xchg(atomic64_t *v, s64 new)
 
 static __always_inline void arch_atomic64_and(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "andq %1,%0"
-			: "+m" (v->counter)
-			: "er" (i)
-			: "memory");
+	v->counter = v->counter & i;
 }
 
 static __always_inline s64 arch_atomic64_fetch_and(s64 i, atomic64_t *v)
