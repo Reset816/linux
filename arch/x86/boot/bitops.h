@@ -27,7 +27,12 @@ static inline bool variable_test_bit(int nr, const void *addr)
 	bool v;
 	const u32 *p = addr;
 
-	asm("btl %2,%1" CC_SET(c) : CC_OUT(c) (v) : "m" (*p), "Ir" (nr));
+	{
+		int index = nr / 32;
+		int bit = nr % 32;
+		u32 value = p[index];
+		v = (bool)((value >> bit) & 1u);
+	}
 	return v;
 }
 
