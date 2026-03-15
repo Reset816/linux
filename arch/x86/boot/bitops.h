@@ -43,7 +43,12 @@ static inline bool variable_test_bit(int nr, const void *addr)
 
 static inline void set_bit(int nr, void *addr)
 {
-	asm("btsl %1,%0" : "+m" (*(u32 *)addr) : "Ir" (nr));
+	u32 *p = (u32 *)addr;
+	unsigned int idx = (unsigned int)nr / 32U;
+	unsigned int bit = (unsigned int)nr % 32U;
+	u32 val = p[idx];
+	val |= (u32)(1U << bit);
+	p[idx] = val;
 }
 
 #endif /* BOOT_BITOPS_H */
