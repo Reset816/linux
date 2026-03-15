@@ -27,9 +27,7 @@ static __always_inline void arch_atomic64_add(s64 i, atomic64_t *v)
 
 static __always_inline void arch_atomic64_sub(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "subq %1,%0"
-		     : "=m" (v->counter)
-		     : "er" (i), "m" (v->counter) : "memory");
+	v->counter = v->counter - i;
 }
 
 static __always_inline bool arch_atomic64_sub_and_test(s64 i, atomic64_t *v)
