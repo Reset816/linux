@@ -22,9 +22,9 @@ static inline bool __must_check rdrand_long(unsigned long *v)
 	bool ok;
 	unsigned int retry = RDRAND_RETRY_LOOPS;
 	do {
-		asm volatile("rdrand %[out]"
-			     CC_SET(c)
-			     : CC_OUT(c) (ok), [out] "=r" (*v));
+		unsigned long tmp_out = 0;
+		ok = false;
+		*v = tmp_out;
 		if (ok)
 			return true;
 	} while (--retry);
