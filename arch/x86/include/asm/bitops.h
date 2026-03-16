@@ -64,10 +64,12 @@ static __always_inline void arch_set_bit(long nr, volatile unsigned long *addr)
 	}
 }
 
-static __always_inline void
-arch___set_bit(unsigned long nr, volatile unsigned long *addr)
+static __always_inline void arch___set_bit(unsigned long nr,
+					   volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(bts) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	unsigned long index = nr / (8UL * sizeof(unsigned long));
+	unsigned long bit = nr % (8UL * sizeof(unsigned long));
+	addr[index] |= (1UL << bit);
 }
 
 static __always_inline void
