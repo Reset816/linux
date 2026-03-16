@@ -48,7 +48,11 @@ typedef struct {
 
 static inline void __gen_sigaddset(sigset_t *set, int _sig)
 {
-	asm("btsl %1,%0" : "+m"(*set) : "Ir"(_sig - 1) : "cc");
+	unsigned long *set_words = (unsigned long *)set;
+	unsigned long bit = (unsigned long)(_sig - 1);
+	unsigned long word = bit / (8 * sizeof(unsigned long));
+	unsigned long bit_in_word = bit % (8 * sizeof(unsigned long));
+	set_words[word] = set_words[word] | (1UL << bit_in_word);
 }
 
 static inline void __const_sigaddset(sigset_t *set, int _sig)
