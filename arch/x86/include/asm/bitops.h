@@ -318,9 +318,15 @@ static __always_inline unsigned long __fls(unsigned long word)
 	if (__builtin_constant_p(word))
 		return BITS_PER_LONG - 1 - __builtin_clzl(word);
 
-	asm("bsr %1,%0"
-	    : "=r" (word)
-	    : "rm" (word));
+	{
+		unsigned long tmp = word;
+		unsigned long idx = 0;
+		while (tmp >> 1) {
+			tmp >>= 1;
+			idx++;
+		}
+		word = idx;
+	}
 	return word;
 }
 
