@@ -155,8 +155,16 @@ static inline void wrgs32(u32 v, addr_t addr)
 static inline bool memcmp_fs(const void *s1, addr_t s2, size_t len)
 {
 	bool diff;
-	asm volatile("fs; repe; cmpsb" CC_SET(nz)
-		     : CC_OUT(nz) (diff), "+D" (s1), "+S" (s2), "+c" (len));
+	const unsigned char *p1 = (const unsigned char *)s1;
+	const unsigned char *p2 = (const unsigned char *)s2;
+	size_t i;
+	diff = false;
+	for (i = 0; i < len; i++) {
+		if (p1[i] != p2[i]) {
+			diff = true;
+			break;
+		}
+	}
 	return diff;
 }
 static inline bool memcmp_gs(const void *s1, addr_t s2, size_t len)
