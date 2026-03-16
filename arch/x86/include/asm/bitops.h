@@ -152,10 +152,15 @@ arch___test_and_set_bit(unsigned long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm(__ASM_SIZE(bts) " %2,%1"
-	    CC_SET(c)
-	    : CC_OUT(c) (oldbit)
-	    : ADDR, "Ir" (nr) : "memory");
+	{
+		unsigned long bits_per_long = 8 * sizeof(unsigned long);
+		unsigned long index = nr / bits_per_long;
+		unsigned long bit = nr % bits_per_long;
+		unsigned long mask = (1UL << bit);
+		unsigned long value = addr[index];
+		oldbit = (value & mask) != 0;
+		addr[index] = value | mask;
+	}
 	return oldbit;
 }
 
