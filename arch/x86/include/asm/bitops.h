@@ -108,14 +108,18 @@ static __always_inline void arch___clear_bit(unsigned long nr,
 	addr[__idx] &= ~(1UL << __bit);
 }
 
-static __always_inline bool arch_xor_unlock_is_negative_byte(unsigned long mask,
-		volatile unsigned long *addr)
+static __always_inline bool
+arch_xor_unlock_is_negative_byte(unsigned long mask,
+				 volatile unsigned long *addr)
 {
 	bool negative;
-	asm volatile(LOCK_PREFIX "xorb %2,%1"
-		CC_SET(s)
-		: CC_OUT(s) (negative), WBYTE_ADDR(addr)
-		: "iq" ((char)mask) : "memory");
+	{
+		volatile unsigned char *p = (volatile unsigned char *)addr;
+		unsigned char byte = p[0];
+		byte = (unsigned char)(byte ^ (unsigned char)mask);
+		p[0] = byte;
+		negative = ((signed char)byte) < 0;
+	}
 	return negative;
 }
 #define arch_xor_unlock_is_negative_byte arch_xor_unlock_is_negative_byte
