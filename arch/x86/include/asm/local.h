@@ -23,8 +23,7 @@ static inline void local_inc(local_t *l)
 
 static inline void local_dec(local_t *l)
 {
-	asm volatile(_ASM_DEC "%0"
-		     : "+m" (l->a.counter));
+	l->a.counter--;
 }
 
 static inline void local_add(long i, local_t *l)
