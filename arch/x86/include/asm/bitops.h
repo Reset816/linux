@@ -287,9 +287,12 @@ static __always_inline unsigned long variable__ffs(unsigned long word)
 
 static __always_inline unsigned long variable_ffz(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "r" (~word));
+	unsigned long value = ~word;
+	unsigned long index = 0;
+	while (((value >> index) & 1UL) == 0UL) {
+		index++;
+	}
+	word = index;
 	return word;
 }
 
