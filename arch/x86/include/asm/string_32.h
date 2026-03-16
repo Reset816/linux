@@ -33,15 +33,20 @@ extern size_t strlen(const char *s);
 static __always_inline void *__memcpy(void *to, const void *from, size_t n)
 {
 	int d0, d1, d2;
-	asm volatile("rep ; movsl\n\t"
-		     "movl %4,%%ecx\n\t"
-		     "andl $3,%%ecx\n\t"
-		     "jz 1f\n\t"
-		     "rep ; movsb\n\t"
-		     "1:"
-		     : "=&c" (d0), "=&D" (d1), "=&S" (d2)
-		     : "0" (n / 4), "g" (n), "1" ((long)to), "2" ((long)from)
-		     : "memory");
+	size_t i;
+	unsigned int *dst32 = (unsigned int *)to;
+	const unsigned int *src32 = (const unsigned int *)from;
+	size_t n32 = n / 4;
+	for (i = 0; i < n32; i++)
+		dst32[i] = src32[i];
+	{
+		unsigned char *dst8 = (unsigned char *)to;
+		const unsigned char *src8 = (const unsigned char *)from;
+		size_t base = n32 * 4;
+		size_t rem = n - base;
+		for (i = 0; i < rem; i++)
+			dst8[base + i] = src8[base + i];
+	}
 	return to;
 }
 
