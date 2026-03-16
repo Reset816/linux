@@ -154,69 +154,68 @@ extern void __add_wrong_size(void)
 #define arch_cmpxchg_local(ptr, old, new)				\
 	__cmpxchg_local(ptr, old, new, sizeof(*(ptr)))
 
-
-#define __raw_try_cmpxchg(_ptr, _pold, _new, size, lock)		\
-({									\
-	bool success;							\
-	__typeof__(_ptr) _old = (__typeof__(_ptr))(_pold);		\
-	__typeof__(*(_ptr)) __old = *_old;				\
-	__typeof__(*(_ptr)) __new = (_new);				\
-	switch (size) {							\
-	case __X86_CASE_B:						\
-	{								\
-		volatile u8 *__ptr = (volatile u8 *)(_ptr);		\
-		asm volatile(lock "cmpxchgb %[new], %[ptr]"		\
-			     CC_SET(z)					\
-			     : CC_OUT(z) (success),			\
-			       [ptr] "+m" (*__ptr),			\
-			       [old] "+a" (__old)			\
-			     : [new] "q" (__new)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_W:						\
-	{								\
-		volatile u16 *__ptr = (volatile u16 *)(_ptr);		\
-		asm volatile(lock "cmpxchgw %[new], %[ptr]"		\
-			     CC_SET(z)					\
-			     : CC_OUT(z) (success),			\
-			       [ptr] "+m" (*__ptr),			\
-			       [old] "+a" (__old)			\
-			     : [new] "r" (__new)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_L:						\
-	{								\
-		volatile u32 *__ptr = (volatile u32 *)(_ptr);		\
-		asm volatile(lock "cmpxchgl %[new], %[ptr]"		\
-			     CC_SET(z)					\
-			     : CC_OUT(z) (success),			\
-			       [ptr] "+m" (*__ptr),			\
-			       [old] "+a" (__old)			\
-			     : [new] "r" (__new)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	case __X86_CASE_Q:						\
-	{								\
-		volatile u64 *__ptr = (volatile u64 *)(_ptr);		\
-		asm volatile(lock "cmpxchgq %[new], %[ptr]"		\
-			     CC_SET(z)					\
-			     : CC_OUT(z) (success),			\
-			       [ptr] "+m" (*__ptr),			\
-			       [old] "+a" (__old)			\
-			     : [new] "r" (__new)			\
-			     : "memory");				\
-		break;							\
-	}								\
-	default:							\
-		__cmpxchg_wrong_size();					\
-	}								\
-	if (unlikely(!success))						\
-		*_old = __old;						\
-	likely(success);						\
-})
+#define __raw_try_cmpxchg(_ptr, _pold, _new, size, lock)              \
+	({                                                            \
+		bool success;                                         \
+		__typeof__(_ptr) _old = (__typeof__(_ptr))(_pold);    \
+		__typeof__(*(_ptr)) __old = *_old;                    \
+		__typeof__(*(_ptr)) __new = (_new);                   \
+		switch (size) {                                       \
+		case __X86_CASE_B: {                                  \
+			volatile u8 *__ptr = (volatile u8 *)(_ptr);   \
+			u8 __cur = __ptr[0];                          \
+			if (__cur == (u8)__old) {                     \
+				__ptr[0] = (u8)__new;                 \
+				success = true;                       \
+			} else {                                      \
+				__old = (u8)__cur;                    \
+				success = false;                      \
+			}                                             \
+			break;                                        \
+		}                                                     \
+		case __X86_CASE_W: {                                  \
+			volatile u16 *__ptr = (volatile u16 *)(_ptr); \
+			u16 __cur = __ptr[0];                         \
+			if (__cur == (u16)__old) {                    \
+				__ptr[0] = (u16)__new;                \
+				success = true;                       \
+			} else {                                      \
+				__old = (u16)__cur;                   \
+				success = false;                      \
+			}                                             \
+			break;                                        \
+		}                                                     \
+		case __X86_CASE_L: {                                  \
+			volatile u32 *__ptr = (volatile u32 *)(_ptr); \
+			u32 __cur = __ptr[0];                         \
+			if (__cur == (u32)__old) {                    \
+				__ptr[0] = (u32)__new;                \
+				success = true;                       \
+			} else {                                      \
+				__old = (u32)__cur;                   \
+				success = false;                      \
+			}                                             \
+			break;                                        \
+		}                                                     \
+		case __X86_CASE_Q: {                                  \
+			volatile u64 *__ptr = (volatile u64 *)(_ptr); \
+			u64 __cur = __ptr[0];                         \
+			if (__cur == (u64)__old) {                    \
+				__ptr[0] = (u64)__new;                \
+				success = true;                       \
+			} else {                                      \
+				__old = (u64)__cur;                   \
+				success = false;                      \
+			}                                             \
+			break;                                        \
+		}                                                     \
+		default:                                              \
+			__cmpxchg_wrong_size();                       \
+		}                                                     \
+		if (unlikely(!success))                               \
+			*_old = __old;                                \
+		likely(success);                                      \
+	})
 
 #define __try_cmpxchg(ptr, pold, new, size)				\
 	__raw_try_cmpxchg((ptr), (pold), (new), (size), LOCK_PREFIX)
