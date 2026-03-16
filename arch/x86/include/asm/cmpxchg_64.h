@@ -27,19 +27,19 @@ union __u128_halves {
 	};
 };
 
-#define __arch_cmpxchg128(_ptr, _old, _new, _lock)			\
-({									\
-	union __u128_halves o = { .full = (_old), },			\
-			    n = { .full = (_new), };			\
-									\
-	asm volatile(_lock "cmpxchg16b %[ptr]"				\
-		     : [ptr] "+m" (*(_ptr)),				\
-		       "+a" (o.low), "+d" (o.high)			\
-		     : "b" (n.low), "c" (n.high)			\
-		     : "memory");					\
-									\
-	o.full;								\
-})
+#define __arch_cmpxchg128(_ptr, _old, _new, _lock)               \
+	({                                                       \
+		union __u128_halves o = { .full = (_old), },			\
+			    n = { .full = (_new), }; \
+		union __u128_halves cur;                         \
+                                                                 \
+		cur.full = *(_ptr);                              \
+		if (cur.full == o.full)                          \
+			*(_ptr) = n.full;                        \
+		o.full = cur.full;                               \
+                                                                 \
+		o.full;                                          \
+	})
 
 static __always_inline u128 arch_cmpxchg128(volatile u128 *ptr, u128 old, u128 new)
 {
