@@ -93,12 +93,15 @@ static __always_inline void *__constant_memcpy(void *to, const void *from,
 	edi = (long)to;
 	if (n >= 5 * 4) {
 		/* large block: use rep prefix */
-		int ecx;
-		asm volatile("rep ; movsl"
-			     : "=&c" (ecx), "=&D" (edi), "=&S" (esi)
-			     : "0" (n / 4), "1" (edi), "2" (esi)
-			     : "memory"
-		);
+		size_t ecx;
+		unsigned int *dst = (unsigned int *)to;
+		const unsigned int *src = (const unsigned int *)from;
+		ecx = n / 4;
+		{
+			size_t i;
+			for (i = 0; i < ecx; i++)
+				dst[i] = src[i];
+		}
 	} else {
 		/* small block: don't clobber ecx + smaller code */
 		if (n >= 4 * 4)
