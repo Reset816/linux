@@ -53,25 +53,25 @@ static __always_inline u128 arch_cmpxchg128_local(volatile u128 *ptr, u128 old, 
 }
 #define arch_cmpxchg128_local arch_cmpxchg128_local
 
-#define __arch_try_cmpxchg128(_ptr, _oldp, _new, _lock)			\
-({									\
-	union __u128_halves o = { .full = *(_oldp), },			\
-			    n = { .full = (_new), };			\
-	bool ret;							\
-									\
-	asm volatile(_lock "cmpxchg16b %[ptr]"				\
-		     CC_SET(e)						\
-		     : CC_OUT(e) (ret),					\
-		       [ptr] "+m" (*ptr),				\
-		       "+a" (o.low), "+d" (o.high)			\
-		     : "b" (n.low), "c" (n.high)			\
-		     : "memory");					\
-									\
-	if (unlikely(!ret))						\
-		*(_oldp) = o.full;					\
-									\
-	likely(ret);							\
-})
+#define __arch_try_cmpxchg128(_ptr, _oldp, _new, _lock)            \
+	({                                                         \
+		union __u128_halves o = { .full = *(_oldp), },			\
+			    n = { .full = (_new), }; \
+		bool ret;                                          \
+                                                                   \
+		if (*(_ptr) == o.full) {                           \
+			*(_ptr) = n.full;                          \
+			ret = true;                                \
+		} else {                                           \
+			o.full = *(_ptr);                          \
+			ret = false;                               \
+		}                                                  \
+                                                                   \
+		if (unlikely(!ret))                                \
+			*(_oldp) = o.full;                         \
+                                                                   \
+		likely(ret);                                       \
+	})
 
 static __always_inline bool arch_try_cmpxchg128(volatile u128 *ptr, u128 *oldp, u128 new)
 {
