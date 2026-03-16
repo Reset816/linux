@@ -486,15 +486,17 @@ static __always_inline bool x86_this_cpu_constant_test_bit(unsigned int nr,
 #endif
 }
 
-static inline bool x86_this_cpu_variable_test_bit(int nr,
-                        const unsigned long __percpu *addr)
+static inline bool
+x86_this_cpu_variable_test_bit(int nr, const unsigned long __percpu *addr)
 {
 	bool oldbit;
+	const unsigned long __percpu *p = addr;
+	unsigned long word_index =
+		(unsigned long)nr / (8UL * sizeof(unsigned long));
+	unsigned long bit_index =
+		(unsigned long)nr % (8UL * sizeof(unsigned long));
 
-	asm volatile("btl "__percpu_arg(2)",%1"
-			CC_SET(c)
-			: CC_OUT(c) (oldbit)
-			: "m" (*(unsigned long __percpu *)addr), "Ir" (nr));
+	oldbit = ((p[word_index] >> bit_index) & 1UL) != 0;
 
 	return oldbit;
 }
