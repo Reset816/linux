@@ -130,10 +130,13 @@ arch___clear_bit_unlock(long nr, volatile unsigned long *addr)
 	arch___clear_bit(nr, addr);
 }
 
-static __always_inline void
-arch___change_bit(unsigned long nr, volatile unsigned long *addr)
+static __always_inline void arch___change_bit(unsigned long nr,
+					      volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(btc) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	unsigned long __bits_per_long = sizeof(unsigned long) * 8;
+	unsigned long __idx = nr / __bits_per_long;
+	unsigned long __bit = nr - (__idx * __bits_per_long);
+	addr[__idx] ^= (1UL << __bit);
 }
 
 static __always_inline void arch_change_bit(long nr,
