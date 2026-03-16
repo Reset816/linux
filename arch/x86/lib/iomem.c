@@ -3,24 +3,45 @@
 #include <linux/io.h>
 #include <linux/kmsan-checks.h>
 
-#define movs(type,to,from) \
-	asm volatile("movs" type:"=&D" (to), "=&S" (from):"0" (to), "1" (from):"memory")
+#define movs(type, to, from)                                             \
+	do {                                                             \
+		if ((type)[0] == 'b') {                                  \
+			unsigned char *__to_b = (unsigned char *)(to);   \
+			const unsigned char *__from_b =                  \
+				(const unsigned char *)(from);           \
+			__to_b[0] = __from_b[0];                         \
+			(to) = (void *)&__to_b[1];                       \
+			(from) = (const void *)&__from_b[1];             \
+		} else if ((type)[0] == 'w') {                           \
+			unsigned short *__to_w = (unsigned short *)(to); \
+			const unsigned short *__from_w =                 \
+				(const unsigned short *)(from);          \
+			__to_w[0] = __from_w[0];                         \
+			(to) = (void *)&__to_w[1];                       \
+			(from) = (const void *)&__from_w[1];             \
+		} else {                                                 \
+			unsigned long *__to_l = (unsigned long *)(to);   \
+			const unsigned long *__from_l =                  \
+				(const unsigned long *)(from);           \
+			__to_l[0] = __from_l[0];                         \
+			(to) = (void *)&__to_l[1];                       \
+			(from) = (const void *)&__from_l[1];             \
+		}                                                        \
+	} while (0)
 
 /* Originally from i386/string.h */
 static __always_inline void rep_movs(void *to, const void *from, size_t n)
 {
 	unsigned long d0, d1, d2;
-	asm volatile("rep ; movsl\n\t"
-		     "testb $2,%b4\n\t"
-		     "je 1f\n\t"
-		     "movsw\n"
-		     "1:\ttestb $1,%b4\n\t"
-		     "je 2f\n\t"
-		     "movsb\n"
-		     "2:"
-		     : "=&c" (d0), "=&D" (d1), "=&S" (d2)
-		     : "0" (n / 4), "q" (n), "1" ((long)to), "2" ((long)from)
-		     : "memory");
+	unsigned char *to_bytes = (unsigned char *)to;
+	const unsigned char *from_bytes = (const unsigned char *)from;
+	size_t i;
+	for (i = 0; i < n; i++) {
+		to_bytes[i] = from_bytes[i];
+	}
+	d0 = 0;
+	d1 = (unsigned long)&to_bytes[n];
+	d2 = (unsigned long)&from_bytes[n];
 }
 
 static void string_memcpy_fromio(void *to, const volatile void __iomem *from, size_t n)
