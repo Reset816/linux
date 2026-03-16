@@ -452,18 +452,20 @@ static __always_inline int fls(unsigned int x)
 	 * We cannot do this on 32 bits because at the very least some
 	 * 486 CPUs did not behave this way.
 	 */
-	asm("bsrl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
+	if (x)
+		r = 31 - __builtin_clz(x);
+	else
+		r = -1;
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsrl %1,%0\n\t"
-	    "cmovzl %2,%0"
-	    : "=&r" (r) : "rm" (x), "rm" (-1));
+	if (x)
+		r = 31 - __builtin_clz(x);
+	else
+		r = -1;
 #else
-	asm("bsrl %1,%0\n\t"
-	    "jnz 1f\n\t"
-	    "movl $-1,%0\n"
-	    "1:" : "=r" (r) : "rm" (x));
+	if (x)
+		r = 31 - __builtin_clz(x);
+	else
+		r = -1;
 #endif
 	return r + 1;
 }
