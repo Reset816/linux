@@ -32,8 +32,16 @@
 int memcmp(const void *s1, const void *s2, size_t len)
 {
 	bool diff;
-	asm("repe; cmpsb" CC_SET(nz)
-	    : CC_OUT(nz) (diff), "+D" (s1), "+S" (s2), "+c" (len));
+	size_t i;
+	const unsigned char *p1 = s1;
+	const unsigned char *p2 = s2;
+	diff = 0;
+	for (i = 0; i < len; i++) {
+		if (p1[i] != p2[i]) {
+			diff = 1;
+			break;
+		}
+	}
 	return diff;
 }
 
