@@ -347,18 +347,44 @@ static __always_inline int variable_ffs(int x)
 	 * We cannot do this on 32 bits because at the very least some
 	 * 486 CPUs did not behave this way.
 	 */
-	asm("bsfl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
+	if (x == 0) {
+		r = -1;
+	} else {
+		int i;
+		r = -1;
+		for (i = 0; i < 32; i++) {
+			if ((x & (1 << i)) != 0) {
+				r = i;
+				break;
+			}
+		}
+	}
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsfl %1,%0\n\t"
-	    "cmovzl %2,%0"
-	    : "=&r" (r) : "rm" (x), "r" (-1));
+	if (x == 0) {
+		r = -1;
+	} else {
+		int i;
+		r = -1;
+		for (i = 0; i < 32; i++) {
+			if ((x & (1 << i)) != 0) {
+				r = i;
+				break;
+			}
+		}
+	}
 #else
-	asm("bsfl %1,%0\n\t"
-	    "jnz 1f\n\t"
-	    "movl $-1,%0\n"
-	    "1:" : "=r" (r) : "rm" (x));
+	if (x == 0) {
+		r = -1;
+	} else {
+		int i;
+		r = -1;
+		for (i = 0; i < 32; i++) {
+			if ((x & (1 << i)) != 0) {
+				r = i;
+				break;
+			}
+		}
+	}
 #endif
 	return r + 1;
 }
