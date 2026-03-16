@@ -86,14 +86,13 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 
 	if (!user_access_begin(uaddr, sizeof(u32)))
 		return -EFAULT;
-	asm volatile("\n"
-		"1:\t" LOCK_PREFIX "cmpxchgl %3, %2\n"
-		"2:\n"
-		_ASM_EXTABLE_TYPE_REG(1b, 2b, EX_TYPE_EFAULT_REG, %0) \
-		: "+r" (ret), "=a" (oldval), "+m" (*uaddr)
-		: "r" (newval), "1" (oldval)
-		: "memory"
-	);
+	{
+		u32 prev;
+		prev = uaddr[0];
+		if (prev == oldval)
+			uaddr[0] = newval;
+		oldval = prev;
+	}
 	user_access_end();
 	*uval = oldval;
 	return ret;
