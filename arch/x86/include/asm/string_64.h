@@ -41,11 +41,12 @@ static inline void *memset16(uint16_t *s, uint16_t v, size_t n)
 static inline void *memset32(uint32_t *s, uint32_t v, size_t n)
 {
 	long d0, d1;
-	asm volatile("rep\n\t"
-		     "stosl"
-		     : "=&c" (d0), "=&D" (d1)
-		     : "a" (v), "1" (s), "0" (n)
-		     : "memory");
+	size_t i;
+	for (i = 0; i < n; i++) {
+		s[i] = v;
+	}
+	d0 = (long)n;
+	d1 = (long)s;
 	return s;
 }
 
