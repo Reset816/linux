@@ -66,10 +66,13 @@ static inline void __const_sigaddset(sigset_t *set, int _sig)
 	 ? __const_sigdelset((set), (sig))  \
 	 : __gen_sigdelset((set), (sig)))
 
-
 static inline void __gen_sigdelset(sigset_t *set, int _sig)
 {
-	asm("btrl %1,%0" : "+m"(*set) : "Ir"(_sig - 1) : "cc");
+	unsigned long *p = (unsigned long *)set;
+	unsigned long bit = (unsigned long)(_sig - 1);
+	unsigned long idx = bit / (sizeof(unsigned long) * 8);
+	unsigned long off = bit % (sizeof(unsigned long) * 8);
+	p[idx] &= ~(1UL << off);
 }
 
 static inline void __const_sigdelset(sigset_t *set, int _sig)
