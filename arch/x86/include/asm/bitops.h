@@ -235,14 +235,15 @@ static __always_inline bool constant_test_bit_acquire(long nr, const volatile un
 	return oldbit;
 }
 
-static __always_inline bool variable_test_bit(long nr, volatile const unsigned long *addr)
+static __always_inline bool
+variable_test_bit(long nr, volatile const unsigned long *addr)
 {
 	bool oldbit;
-
-	asm volatile(__ASM_SIZE(bt) " %2,%1"
-		     CC_SET(c)
-		     : CC_OUT(c) (oldbit)
-		     : "m" (*(unsigned long *)addr), "Ir" (nr) : "memory");
+	unsigned long bit_index = (unsigned long)nr;
+	unsigned long word_index = bit_index / (sizeof(unsigned long) * 8UL);
+	unsigned long bit_offset = bit_index % (sizeof(unsigned long) * 8UL);
+	unsigned long word_value = addr[word_index];
+	oldbit = (bool)((word_value >> bit_offset) & 1UL);
 
 	return oldbit;
 }
