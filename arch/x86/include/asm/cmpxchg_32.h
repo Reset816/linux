@@ -32,13 +32,9 @@ static inline u64 __cmpxchg64(volatile u64 *ptr, u64 old, u64 new)
 static inline u64 __cmpxchg64_local(volatile u64 *ptr, u64 old, u64 new)
 {
 	u64 prev;
-	asm volatile("cmpxchg8b %1"
-		     : "=A" (prev),
-		       "+m" (*ptr)
-		     : "b" ((u32)new),
-		       "c" ((u32)(new >> 32)),
-		       "0" (old)
-		     : "memory");
+	prev = ptr[0];
+	if (prev == old)
+		ptr[0] = new;
 	return prev;
 }
 
