@@ -12,19 +12,16 @@
 #include <asm/processor.h>
 #include <asm/smap.h>
 
-#define unsafe_atomic_op1(insn, oval, uaddr, oparg, label)	\
-do {								\
-	int oldval = 0, ret;					\
-	asm volatile("1:\t" insn "\n"				\
-		     "2:\n"					\
-		     _ASM_EXTABLE_TYPE_REG(1b, 2b, EX_TYPE_EFAULT_REG, %1) \
-		     : "=r" (oldval), "=r" (ret), "+m" (*uaddr)	\
-		     : "0" (oparg), "1" (0));	\
-	if (ret)						\
-		goto label;					\
-	*oval = oldval;						\
-} while(0)
-
+#define unsafe_atomic_op1(insn, oval, uaddr, oparg, label) \
+	do {                                               \
+		int oldval = 0, ret;                       \
+		oldval = (uaddr)[0];                       \
+		(uaddr)[0] = (oparg);                      \
+		ret = 0;                                   \
+		if (ret)                                   \
+			goto label;                        \
+		*oval = oldval;                            \
+	} while (0)
 
 #define unsafe_atomic_op2(insn, oval, uaddr, oparg, label)	\
 do {								\
