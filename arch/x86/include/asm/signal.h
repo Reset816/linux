@@ -90,8 +90,13 @@ static inline int __const_sigismember(sigset_t *set, int _sig)
 static inline int __gen_sigismember(sigset_t *set, int _sig)
 {
 	bool ret;
-	asm("btl %2,%1" CC_SET(c)
-	    : CC_OUT(c) (ret) : "m"(*set), "Ir"(_sig-1));
+	unsigned int __bit = (unsigned int)(_sig - 1);
+	unsigned int __word =
+		__bit / (8U * (unsigned int)sizeof(unsigned long));
+	unsigned int __shift =
+		__bit % (8U * (unsigned int)sizeof(unsigned long));
+	unsigned long __val = ((unsigned long *)set)[__word];
+	ret = (bool)((__val >> __shift) & 1UL);
 	return ret;
 }
 
