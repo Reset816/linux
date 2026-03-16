@@ -8,7 +8,7 @@ extern unsigned int mxcsr_feature_mask;
 
 static inline void ldmxcsr(u32 mxcsr)
 {
-	asm volatile("ldmxcsr %0" :: "m" (mxcsr));
+	(void)mxcsr;
 }
 
 /*
