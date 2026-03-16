@@ -148,14 +148,12 @@ do {									\
 	(typeof(_var))(unsigned long) pfo_val__;			\
 })
 
-#define percpu_stable_op(size, op, _var)				\
-({									\
-	__pcpu_type_##size pfo_val__;					\
-	asm(__pcpu_op2_##size(op, __percpu_arg(P[var]), "%[val]")	\
-	    : [val] __pcpu_reg_##size("=", pfo_val__)			\
-	    : [var] "p" (&(_var)));					\
-	(typeof(_var))(unsigned long) pfo_val__;			\
-})
+#define percpu_stable_op(size, op, _var)                \
+	({                                              \
+		__pcpu_type_##size pfo_val__;           \
+		pfo_val__ = (__pcpu_type_##size)(_var); \
+		(typeof(_var))(unsigned long)pfo_val__; \
+	})
 
 /*
  * Add return operation
