@@ -46,10 +46,13 @@ static inline unsigned long __arch_hweight64(__u64 w)
 static __always_inline unsigned long __arch_hweight64(__u64 w)
 {
 	unsigned long res;
+	__u64 x = w;
 
-	asm (ALTERNATIVE("call __sw_hweight64", "popcntq %1, %0", X86_FEATURE_POPCNT)
-			 : "="REG_OUT (res)
-			 : REG_IN (w));
+	res = 0;
+	while (x) {
+		res += (unsigned long)(x & 1);
+		x >>= 1;
+	}
 
 	return res;
 }
