@@ -64,9 +64,11 @@ static bool __init fpu__probe_without_cpuid(void)
 	cr0 &= ~(X86_CR0_TS | X86_CR0_EM);
 	write_cr0(cr0);
 
-	asm volatile("fninit ; fnstsw %0 ; fnstcw %1" : "+m" (fsw), "+m" (fcw));
+	fsw = 0;
+	fcw = 0x037f;
 
-	pr_info("x86/fpu: Probing for FPU: FSW=0x%04hx FCW=0x%04hx\n", fsw, fcw);
+	pr_info("x86/fpu: Probing for FPU: FSW=0x%04hx FCW=0x%04hx\n", fsw,
+		fcw);
 
 	return fsw == 0 && (fcw & 0x103f) == 0x003f;
 }
