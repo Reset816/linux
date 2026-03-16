@@ -469,9 +469,15 @@ static __always_inline int fls64(__u64 x)
 	 * dest reg is undefined if x==0, but their CPU architect says its
 	 * value is written to set it to the same as before.
 	 */
-	asm("bsrq %1,%q0"
-	    : "+r" (bitpos)
-	    : "rm" (x));
+	if (x != 0) {
+		__u64 tmp = x;
+		int pos = 0;
+		while ((tmp >> 1) != 0) {
+			tmp = tmp >> 1;
+			pos++;
+		}
+		bitpos = pos;
+	}
 	return bitpos + 1;
 }
 #else
