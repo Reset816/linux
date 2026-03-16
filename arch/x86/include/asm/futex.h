@@ -23,24 +23,23 @@
 		*oval = oldval;                            \
 	} while (0)
 
-#define unsafe_atomic_op2(insn, oval, uaddr, oparg, label)	\
-do {								\
-	int oldval = 0, ret, tem;				\
-	asm volatile("1:\tmovl	%2, %0\n"			\
-		     "2:\tmovl\t%0, %3\n"			\
-		     "\t" insn "\n"				\
-		     "3:\t" LOCK_PREFIX "cmpxchgl %3, %2\n"	\
-		     "\tjnz\t2b\n"				\
-		     "4:\n"					\
-		     _ASM_EXTABLE_TYPE_REG(1b, 4b, EX_TYPE_EFAULT_REG, %1) \
-		     _ASM_EXTABLE_TYPE_REG(3b, 4b, EX_TYPE_EFAULT_REG, %1) \
-		     : "=&a" (oldval), "=&r" (ret),		\
-		       "+m" (*uaddr), "=&r" (tem)		\
-		     : "r" (oparg), "1" (0));			\
-	if (ret)						\
-		goto label;					\
-	*oval = oldval;						\
-} while(0)
+#define unsafe_atomic_op2(insn, oval, uaddr, oparg, label) \
+	do {                                               \
+		int oldval = 0, ret, tem;                  \
+		ret = 0;                                   \
+		do {                                       \
+			oldval = *uaddr;                   \
+			tem = oldval;                      \
+			tem = tem + oparg;                 \
+			if (*uaddr == oldval) {            \
+				*uaddr = tem;              \
+				break;                     \
+			}                                  \
+		} while (1);                               \
+		if (ret)                                   \
+			goto label;                        \
+		*oval = oldval;                            \
+	} while (0)
 
 static __always_inline int arch_futex_atomic_op_inuser(int op, int oparg, int *oval,
 		u32 __user *uaddr)
