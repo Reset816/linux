@@ -264,10 +264,10 @@ static void restore_screen(void)
 	struct biosregs ireg;
 
 	if (graphic_mode)
-		return;		/* Can't restore onto a graphic mode */
+		return; /* Can't restore onto a graphic mode */
 
 	if (!src)
-		return;		/* No saved screen contents */
+		return; /* No saved screen contents */
 
 	/* Restore screen contents */
 
@@ -277,26 +277,24 @@ static void restore_screen(void)
 
 		if (y < saved.y) {
 			int copy = (xs < saved.x) ? xs : saved.x;
-			copy_to_fs(dst, src, copy*sizeof(u16));
-			dst += copy*sizeof(u16);
+			copy_to_fs(dst, src, copy * sizeof(u16));
+			dst += copy * sizeof(u16);
 			src += saved.x;
-			npad = (xs < saved.x) ? 0 : xs-saved.x;
+			npad = (xs < saved.x) ? 0 : xs - saved.x;
 		} else {
 			npad = xs;
 		}
 
 		/* Writes "npad" blank characters to
 		   video_segment:dst and advances dst */
-		asm volatile("pushw %%es ; "
-			     "movw %2,%%es ; "
-			     "shrw %%cx ; "
-			     "jnc 1f ; "
-			     "stosw \n\t"
-			     "1: rep;stosl ; "
-			     "popw %%es"
-			     : "+D" (dst), "+c" (npad)
-			     : "bdS" (video_segment),
-			       "a" (0x07200720));
+		{
+			int i;
+			u16 *dstp = (u16 *)dst;
+			for (i = 0; i < npad; i++)
+				dstp[i] = 0x0720;
+			dst += npad * sizeof(u16);
+			npad = 0;
+		}
 	}
 
 	/* Restore cursor position */
