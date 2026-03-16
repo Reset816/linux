@@ -42,14 +42,14 @@ static inline bool __try_cmpxchg64(volatile u64 *ptr, u64 *pold, u64 new)
 {
 	bool success;
 	u64 old = *pold;
-	asm volatile(LOCK_PREFIX "cmpxchg8b %[ptr]"
-		     CC_SET(z)
-		     : CC_OUT(z) (success),
-		       [ptr] "+m" (*ptr),
-		       "+A" (old)
-		     : "b" ((u32)new),
-		       "c" ((u32)(new >> 32))
-		     : "memory");
+	u64 cur_val = *ptr;
+	if (cur_val == old) {
+		*ptr = new;
+		success = true;
+	} else {
+		old = cur_val;
+		success = false;
+	}
 
 	if (unlikely(!success))
 		*pold = old;
