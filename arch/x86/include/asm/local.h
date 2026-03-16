@@ -18,8 +18,7 @@ typedef struct {
 
 static inline void local_inc(local_t *l)
 {
-	asm volatile(_ASM_INC "%0"
-		     : "+m" (l->a.counter));
+	l->a.counter = l->a.counter + 1;
 }
 
 static inline void local_dec(local_t *l)
