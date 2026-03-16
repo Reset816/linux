@@ -59,8 +59,13 @@ static __always_inline void arch_set_bit(long nr, volatile unsigned long *addr)
 		unsigned long __mask = 1UL << __bit;
 		addr[__index] = addr[__index] | __mask;
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(bts) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		unsigned long __bits_per =
+			(unsigned long)(sizeof(unsigned long) * 8);
+		unsigned long __index = (unsigned long)nr / __bits_per;
+		unsigned long __bit =
+			(unsigned long)nr - (__index * __bits_per);
+		unsigned long __mask = 1UL << __bit;
+		addr[__index] = addr[__index] | __mask;
 	}
 }
 
