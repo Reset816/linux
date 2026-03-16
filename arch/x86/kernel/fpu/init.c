@@ -106,7 +106,11 @@ static void __init fpu__init_system_mxcsr(void)
 		/* Static because GCC does not get 16-byte stack alignment right: */
 		static struct fxregs_state fxregs __initdata;
 
-		asm volatile("fxsave %0" : "+m" (fxregs));
+		{
+			volatile struct fxregs_state *ptr = &fxregs;
+			struct fxregs_state tmp = *ptr;
+			*ptr = tmp;
+		}
 
 		mask = fxregs.mxcsr_mask;
 
