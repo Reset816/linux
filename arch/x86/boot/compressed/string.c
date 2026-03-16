@@ -28,13 +28,23 @@ static void *____memcpy(void *dest, const void *src, size_t n)
 static void *____memcpy(void *dest, const void *src, size_t n)
 {
 	long d0, d1, d2;
-	asm volatile(
-		"rep ; movsq\n\t"
-		"movq %4,%%rcx\n\t"
-		"rep ; movsb\n\t"
-		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
-		: "memory");
+	size_t q = n >> 3;
+	size_t r = n & 7;
+	size_t i;
+	unsigned long *dd = (unsigned long *)dest;
+	const unsigned long *ss = (const unsigned long *)src;
+	unsigned char *dcb = (unsigned char *)dest;
+	const unsigned char *scb = (const unsigned char *)src;
+
+	for (i = 0; i < q; i++)
+		dd[i] = ss[i];
+
+	for (i = 0; i < r; i++)
+		dcb[(q << 3) + i] = scb[(q << 3) + i];
+
+	d0 = 0;
+	d1 = (long)&dcb[n];
+	d2 = (long)&scb[n];
 
 	return dest;
 }
