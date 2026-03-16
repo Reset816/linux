@@ -42,15 +42,11 @@ static void __memcpy_ntdqa(void *dst, const void *src, unsigned long len)
 	kernel_fpu_begin();
 
 	while (len >= 4) {
-		asm("movntdqa   (%0), %%xmm0\n"
-		    "movntdqa 16(%0), %%xmm1\n"
-		    "movntdqa 32(%0), %%xmm2\n"
-		    "movntdqa 48(%0), %%xmm3\n"
-		    "movaps %%xmm0,   (%1)\n"
-		    "movaps %%xmm1, 16(%1)\n"
-		    "movaps %%xmm2, 32(%1)\n"
-		    "movaps %%xmm3, 48(%1)\n"
-		    :: "r" (src), "r" (dst) : "memory");
+		unsigned char *dst_c = dst;
+		const unsigned char *src_c = src;
+		unsigned long i;
+		for (i = 0; i < 64; i++)
+			dst_c[i] = src_c[i];
 		src += 64;
 		dst += 64;
 		len -= 4;
