@@ -91,8 +91,13 @@ static __always_inline void arch_clear_bit(long nr,
 				(unsigned char)(__p[__byte_index] & __mask);
 		}
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btr) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		unsigned long __nr = (unsigned long)nr;
+		unsigned long __bits_per_long =
+			(unsigned long)(sizeof(unsigned long) * 8u);
+		unsigned long __word_index = (__nr / __bits_per_long);
+		unsigned long __bit_index = (__nr % __bits_per_long);
+		unsigned long __mask = ~(1ul << __bit_index);
+		addr[__word_index] = addr[__word_index] & __mask;
 	}
 }
 
