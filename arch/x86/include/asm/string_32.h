@@ -165,11 +165,13 @@ extern void *memchr(const void *cs, int c, size_t count);
 static inline void *__memset_generic(void *s, char c, size_t count)
 {
 	int d0, d1;
-	asm volatile("rep\n\t"
-		     "stosb"
-		     : "=&c" (d0), "=&D" (d1)
-		     : "a" (c), "1" (s), "0" (count)
-		     : "memory");
+	unsigned char *dst = (unsigned char *)s;
+	size_t i;
+	for (i = 0; i < count; i++) {
+		dst[i] = (unsigned char)c;
+	}
+	d0 = (int)count;
+	d1 = 0;
 	return s;
 }
 
