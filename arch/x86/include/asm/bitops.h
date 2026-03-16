@@ -149,8 +149,11 @@ static __always_inline void arch_change_bit(long nr,
 		unsigned char mask = (unsigned char)CONST_MASK(nr);
 		byte_addr[index] ^= mask;
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btc) " %1,%0"
-			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
+		unsigned long bit = (unsigned long)nr;
+		unsigned long word_index = bit / (sizeof(unsigned long) * 8);
+		unsigned long bit_index = bit % (sizeof(unsigned long) * 8);
+		unsigned long mask = 1UL << bit_index;
+		addr[word_index] ^= mask;
 	}
 }
 
