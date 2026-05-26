@@ -85,9 +85,8 @@ mod pthread_mtx {
                         unsafe { libc::pthread_mutexattr_destroy(attr) };
                         return Err(Error::IO(std::io::Error::from_raw_os_error(ret)));
                     }
-                    // SAFETY: slot is valid
-                    unsafe { slot.write(libc::PTHREAD_MUTEX_INITIALIZER) };
-                    // SAFETY: attr and slot are valid ptrs and attr is initialized
+                    // SAFETY: attr and slot are valid ptrs, attr is initialized,
+                    // and no mutex has been initialized at slot yet.
                     let ret = unsafe { libc::pthread_mutex_init(slot, attr) };
                     // SAFETY: attr was initialized
                     unsafe { libc::pthread_mutexattr_destroy(attr) };
