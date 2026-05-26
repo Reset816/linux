@@ -159,8 +159,13 @@ impl<T: ?Sized, B: GlobalLockBackend> GlobalLockedBy<T, B> {
     /// Access the value immutably.
     ///
     /// The caller must prove shared access to the lock.
-    pub fn as_ref<'a>(&'a self, _guard: &'a GlobalGuard<B>) -> &'a T {
-        // SAFETY: The lock is globally unique, so there can only be one guard.
+    pub fn as_ref<'a>(&'a self, _guard: &'a GlobalGuard<B>) -> &'a T
+    where
+        T: Sync,
+    {
+        // SAFETY: The lock is globally unique, so there can only be one guard. The shared borrow
+        // of the guard prevents `as_mut` from creating an aliasing mutable reference while the
+        // returned reference is alive. The type is `Sync`, so shared access is sound.
         unsafe { &*self.value.get() }
     }
 
