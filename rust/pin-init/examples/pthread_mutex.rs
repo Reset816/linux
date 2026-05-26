@@ -12,7 +12,7 @@ mod pthread_mtx {
     use core::alloc::AllocError;
     use core::{
         cell::UnsafeCell,
-        marker::PhantomPinned,
+        marker::{PhantomData, PhantomPinned},
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
         pin::Pin,
@@ -108,18 +108,24 @@ mod pthread_mtx {
         #[allow(dead_code)]
         pub fn lock(&self) -> PThreadMutexGuard<'_, T> {
             // SAFETY: raw is always initialized
-            unsafe { libc::pthread_mutex_lock(self.raw.get()) };
-            PThreadMutexGuard { mtx: self }
+            let ret = unsafe { libc::pthread_mutex_lock(self.raw.get()) };
+            assert_eq!(ret, 0, "pthread_mutex_lock failed");
+            PThreadMutexGuard {
+                mtx: self,
+                _not_send: PhantomData,
+            }
         }
     }
 
     pub struct PThreadMutexGuard<'a, T> {
         mtx: &'a PThreadMutex<T>,
+        _not_send: PhantomData<*mut ()>,
     }
 
     impl<T> Drop for PThreadMutexGuard<'_, T> {
         fn drop(&mut self) {
-            // SAFETY: raw is always initialized
+            // SAFETY: raw is initialized, `lock` only constructs a guard after successfully
+            // locking it, and the guard is not `Send`, so it is dropped on the locking thread.
             unsafe { libc::pthread_mutex_unlock(self.mtx.raw.get()) };
         }
     }
