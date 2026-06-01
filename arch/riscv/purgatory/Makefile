@@ -94,6 +94,7 @@ CFLAGS_string.o			+= $(PURGATORY_CFLAGS)
 
 CFLAGS_REMOVE_ctype.o		+= $(PURGATORY_CFLAGS_REMOVE)
 CFLAGS_ctype.o			+= $(PURGATORY_CFLAGS)
+AFLAGS_memset.o			+= -DRISCV_MEMSET_STANDALONE
 
 asflags-remove-y		+= $(foreach x, -g -gdwarf-4 -gdwarf-5, $(x) -Wa,$(x))
 

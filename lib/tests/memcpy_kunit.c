@@ -292,6 +292,90 @@ static void memset_test(struct kunit *test)
 #undef TEST_OP
 }
 
+#define LARGE_MEMSET_BUF_SIZE		(5 * PAGE_SIZE + 2048)
+#define LARGE_MEMSET_MAX_SIZE		(4 * PAGE_SIZE + 1024)
+#define LARGE_MEMSET_GUARD		32
+
+static u8 large_memset_buf[LARGE_MEMSET_BUF_SIZE] __aligned(PAGE_SIZE);
+
+static void memset_large_poison(void)
+{
+	volatile u8 *buf = large_memset_buf;
+
+	for (size_t i = 0; i < sizeof(large_memset_buf); i++)
+		buf[i] = 0xa5;
+}
+
+static void memset_large_one(struct kunit *test, int offset, int value,
+			     size_t bytes)
+{
+	u8 *dst = large_memset_buf + LARGE_MEMSET_GUARD + offset;
+	u8 expected = value;
+	void *ret;
+
+	memset_large_poison();
+
+	ret = memset(dst, value, bytes);
+	KUNIT_ASSERT_PTR_EQ_MSG(test, ret, dst,
+				"bad return with offset %d size %zu value 0x%02x",
+				offset, bytes, expected);
+
+	for (size_t i = 0; i < LARGE_MEMSET_GUARD + offset; i++)
+		KUNIT_ASSERT_EQ_MSG(test, large_memset_buf[i], 0xa5,
+				    "left guard changed at %zu, offset %d size %zu value 0x%02x",
+				    i, offset, bytes, expected);
+
+	for (size_t i = 0; i < bytes; i++)
+		KUNIT_ASSERT_EQ_MSG(test, dst[i], expected,
+				    "fill mismatch at %zu, offset %d size %zu value 0x%02x",
+				    i, offset, bytes, expected);
+
+	for (size_t i = LARGE_MEMSET_GUARD + offset + bytes;
+	     i < sizeof(large_memset_buf); i++)
+		KUNIT_ASSERT_EQ_MSG(test, large_memset_buf[i], 0xa5,
+				    "right guard changed at %zu, offset %d size %zu value 0x%02x",
+				    i, offset, bytes, expected);
+}
+
+static void memset_large_test(struct kunit *test)
+{
+	static const size_t sizes[] = {
+		0, 1, 15, 16, 255, 256, 767, 768, 1023, 1024, 1025,
+		1536, 2047, 2048, 2049, PAGE_SIZE - 1, PAGE_SIZE,
+		PAGE_SIZE + 1, PAGE_SIZE + 1023, PAGE_SIZE + 1024,
+		(4 * PAGE_SIZE) - 1, 4 * PAGE_SIZE, (4 * PAGE_SIZE) + 1,
+		LARGE_MEMSET_MAX_SIZE,
+	};
+	static const int values[] = {
+		0x00, 0x01, 0x5a, 0x80, 0xff, 0x1234,
+	};
+	static const int boundary_offsets[] = {
+		PAGE_SIZE - LARGE_MEMSET_GUARD - 16,
+		PAGE_SIZE - LARGE_MEMSET_GUARD - 1,
+		PAGE_SIZE - LARGE_MEMSET_GUARD,
+		PAGE_SIZE - LARGE_MEMSET_GUARD + 1,
+		PAGE_SIZE - LARGE_MEMSET_GUARD + 16,
+	};
+
+	for (int value = 0; value < ARRAY_SIZE(values); value++) {
+		for (int offset = 0; offset < 64; offset++) {
+			for (int size = 0; size < ARRAY_SIZE(sizes); size++) {
+				memset_large_one(test, offset, values[value],
+						 sizes[size]);
+				cond_resched();
+			}
+		}
+
+		for (int offset = 0; offset < ARRAY_SIZE(boundary_offsets); offset++) {
+			for (int size = 0; size < ARRAY_SIZE(sizes); size++) {
+				memset_large_one(test, boundary_offsets[offset],
+						 values[value], sizes[size]);
+				cond_resched();
+			}
+		}
+	}
+}
+
 static u8 large_src[1024];
 static u8 large_dst[2048];
 static const u8 large_zero[2048];
@@ -495,6 +579,7 @@ static void memmove_overlap_test(struct kunit *test)
 
 static struct kunit_case memcpy_test_cases[] = {
 	KUNIT_CASE(memset_test),
+	KUNIT_CASE_SLOW(memset_large_test),
 	KUNIT_CASE(memcpy_test),
 	KUNIT_CASE_SLOW(memcpy_large_test),
 	KUNIT_CASE_SLOW(memmove_test),

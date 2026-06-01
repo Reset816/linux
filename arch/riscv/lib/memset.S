@@ -6,9 +6,17 @@
 
 #include <linux/linkage.h>
 #include <asm/asm.h>
+#include <asm/alternative-macros.h>
+#include <asm/hwcap.h>
 
-/* void *memset(void *, int, size_t) */
+#define RISCV_ISA_V_MEMSET_THRESHOLD	16384
+
+/* void *__memset_scalar(void *, int, size_t) */
+#ifdef CONFIG_RISCV_ISA_V
+SYM_FUNC_START(__memset_scalar)
+#else
 SYM_FUNC_START(__memset)
+#endif
 	move t0, a0  /* Preserve return value */
 
 	/* Defer to byte-oriented fill for small sizes */
@@ -109,7 +117,26 @@ SYM_FUNC_START(__memset)
 	bltu t0, a3, 5b
 6:
 	ret
+#ifdef CONFIG_RISCV_ISA_V
+SYM_FUNC_END(__memset_scalar)
+SYM_FUNC_ALIAS(__pi_memset, __memset_scalar)
+SYM_FUNC_ALIAS(__pi___memset, __memset_scalar)
+#ifdef RISCV_MEMSET_STANDALONE
+SYM_FUNC_ALIAS(__memset, __memset_scalar)
+SYM_FUNC_ALIAS_WEAK(memset, __memset_scalar)
+#endif
+#ifndef RISCV_MEMSET_STANDALONE
+SYM_FUNC_START(__memset)
+	li	a3, RISCV_ISA_V_MEMSET_THRESHOLD
+	bltu	a2, a3, __memset_scalar
+	ALTERNATIVE("j __memset_scalar", "nop", 0, RISCV_ISA_EXT_ZVE32X, CONFIG_RISCV_ISA_V)
+	tail	enter_vector_memset
+SYM_FUNC_END(__memset)
+SYM_FUNC_ALIAS_WEAK(memset, __memset)
+#endif
+#else
 SYM_FUNC_END(__memset)
 SYM_FUNC_ALIAS_WEAK(memset, __memset)
 SYM_FUNC_ALIAS(__pi_memset, __memset)
 SYM_FUNC_ALIAS(__pi___memset, __memset)
+#endif
