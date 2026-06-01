@@ -7,6 +7,7 @@
 #include <linux/ktime.h>
 #include <linux/math64.h>
 #include <linux/mm.h>
+#include <linux/percpu.h>
 #include <linux/printk.h>
 #include <linux/string.h>
 
@@ -25,6 +26,11 @@ enum riscv_copy_page_policy {
 
 static DEFINE_STATIC_KEY_FALSE(riscv_copy_page_vector_key);
 static enum riscv_copy_page_policy riscv_copy_page_policy = RISCV_COPY_PAGE_AUTO;
+
+#if IS_ENABLED(CONFIG_RISCV_COPY_PAGE_TEST)
+static DEFINE_PER_CPU(u64, riscv_copy_page_test_calls);
+static DEFINE_PER_CPU(u64, riscv_copy_page_test_vector_calls);
+#endif
 
 static int __init riscv_copy_page_setup(char *str)
 {
@@ -54,15 +60,74 @@ static __always_inline bool riscv_copy_page_use_vector(void)
 	       riscv_copy_page_vector_legal();
 }
 
+#if IS_ENABLED(CONFIG_RISCV_COPY_PAGE_TEST)
+static __always_inline void riscv_copy_page_test_count(bool vector)
+{
+	this_cpu_inc(riscv_copy_page_test_calls);
+	if (vector)
+		this_cpu_inc(riscv_copy_page_test_vector_calls);
+}
+
+bool riscv_copy_page_test_uses_vector(void)
+{
+	return riscv_copy_page_use_vector();
+}
+EXPORT_SYMBOL_GPL(riscv_copy_page_test_uses_vector);
+
+bool riscv_copy_page_test_vector_legal(void)
+{
+	return riscv_copy_page_vector_legal();
+}
+EXPORT_SYMBOL_GPL(riscv_copy_page_test_vector_legal);
+
+void riscv_copy_page_test_vector_copy(void *to, const void *from)
+{
+	kernel_vector_begin();
+	__riscv_copy_page_vector(to, from);
+	kernel_vector_end();
+}
+EXPORT_SYMBOL_GPL(riscv_copy_page_test_vector_copy);
+
+void riscv_copy_page_test_stats_reset(void)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		per_cpu(riscv_copy_page_test_calls, cpu) = 0;
+		per_cpu(riscv_copy_page_test_vector_calls, cpu) = 0;
+	}
+}
+EXPORT_SYMBOL_GPL(riscv_copy_page_test_stats_reset);
+
+void riscv_copy_page_test_stats_read(struct riscv_copy_page_test_stats *stats)
+{
+	int cpu;
+
+	stats->calls = 0;
+	stats->vector_calls = 0;
+
+	for_each_possible_cpu(cpu) {
+		stats->calls += per_cpu(riscv_copy_page_test_calls, cpu);
+		stats->vector_calls +=
+			per_cpu(riscv_copy_page_test_vector_calls, cpu);
+	}
+}
+EXPORT_SYMBOL_GPL(riscv_copy_page_test_stats_read);
+#else
+static __always_inline void riscv_copy_page_test_count(bool vector) { }
+#endif
+
 void copy_page(void *to, const void *from)
 {
 	if (riscv_copy_page_use_vector()) {
+		riscv_copy_page_test_count(true);
 		kernel_vector_begin();
 		__riscv_copy_page_vector(to, from);
 		kernel_vector_end();
 		return;
 	}
 
+	riscv_copy_page_test_count(false);
 	memcpy(to, from, PAGE_SIZE);
 }
 EXPORT_SYMBOL(copy_page);

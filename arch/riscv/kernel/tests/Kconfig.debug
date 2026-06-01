@@ -30,6 +30,16 @@ config RISCV_MODULE_LINKING_KUNIT
 
          If unsure, say N.
 
+config RISCV_COPY_PAGE_TEST
+       tristate "RISC-V copy_page() runtime test module"
+       depends on RISCV_ISA_V
+       depends on DEBUG_FS
+       help
+         Build an opt-in debugfs test and benchmark module for the RISC-V
+	 copy_page() implementation.
+
+         If unsure, say N.
+
 endif # RUNTIME_TESTING_MENU
 
 endmenu # "arch/riscv/kernel runtime Testing"
