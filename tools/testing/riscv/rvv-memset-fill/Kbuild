@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+obj-m := rvv_memset_eval.o
+
+KASAN_SANITIZE_rvv_memset_eval.o := n
+KCOV_INSTRUMENT_rvv_memset_eval.o := n
+KCSAN_SANITIZE_rvv_memset_eval.o := n
+UBSAN_SANITIZE_rvv_memset_eval.o := n
