@@ -6,6 +6,7 @@
  */
 
 #include <linux/bitfield.h>
+#include <linux/bitops.h>
 #include <linux/bpf.h>
 #include <linux/filter.h>
 #include <linux/memory.h>
@@ -149,6 +150,20 @@ static bool in_auipc_jalr_range(s64 val)
 		val < ((1L << 31) - (1L << 11));
 }
 
+static bool is_64b_one_bit(s64 val)
+{
+	u64 bits = val;
+
+	return bits && !(bits & (bits - 1));
+}
+
+static bool is_64b_single_zero(s64 val)
+{
+	u64 inverted = ~(u64)val;
+
+	return inverted && !(inverted & (inverted - 1));
+}
+
 /* Modify rd pointer to alternate reg to avoid corrupting original reg */
 static void emit_sextw_alt(u8 *rd, u8 ra, struct rv_jit_context *ctx)
 {
@@ -187,6 +202,22 @@ static int emit_addr(u8 rd, u64 addr, bool extra_pass, struct rv_jit_context *ct
 /* Emit variable-length instructions for 32-bit and 64-bit imm */
 static void emit_imm(u8 rd, s64 val, struct rv_jit_context *ctx)
 {
+	s64 upper, lower;
+	int shift;
+
+	if (rvzbs_enabled()) {
+		if (!is_12b_int(val) && is_64b_one_bit(val)) {
+			emit(rvzbs_bseti(rd, RV_REG_ZERO, __ffs64(val)), ctx);
+			return;
+		}
+
+		if (!is_32b_int(val) && is_64b_single_zero(val)) {
+			emit_li(rd, -1, ctx);
+			emit(rvzbs_bclri(rd, rd, __ffs64(~(u64)val)), ctx);
+			return;
+		}
+	}
+
 	/* Note that the immediate from the add is sign-extended,
 	 * which means that we need to compensate this by adding 2^12,
 	 * when the 12th bit is set. A simpler way of doing this, and
@@ -197,12 +228,11 @@ static void emit_imm(u8 rd, s64 val, struct rv_jit_context *ctx)
 	 *
 	 * This also means that we need to process LSB to MSB.
 	 */
-	s64 upper = (val + (1 << 11)) >> 12;
+	upper = (val + (1 << 11)) >> 12;
 	/* Sign-extend lower 12 bits to 64 bits since immediates for li, addiw,
 	 * and addi are signed and RVC checks will perform signed comparisons.
 	 */
-	s64 lower = ((val & 0xfff) << 52) >> 52;
-	int shift;
+	lower = ((val & 0xfff) << 52) >> 52;
 
 	if (is_32b_int(val)) {
 		if (upper)

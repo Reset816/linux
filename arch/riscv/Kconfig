@@ -773,6 +773,28 @@ config RISCV_ISA_ZBB
 
 	   If you don't know what to do here, say Y.
 
+config TOOLCHAIN_HAS_ZBS
+	bool
+	default y
+	depends on !64BIT || $(cc-option,-mabi=lp64 -march=rv64ima_zbs)
+	depends on !32BIT || $(cc-option,-mabi=ilp32 -march=rv32ima_zbs)
+	depends on LLD_VERSION >= 150000 || LD_VERSION >= 23900
+	depends on AS_HAS_OPTION_ARCH
+
+config RISCV_ISA_ZBS
+	bool "Zbs extension support for bit manipulation instructions"
+	depends on TOOLCHAIN_HAS_ZBS
+	depends on RISCV_ALTERNATIVE
+	default y
+	help
+	   Add support for enabling optimisations in the kernel when the
+	   Zbs extension is detected at boot.
+
+	   The Zbs extension provides instructions to set, clear, invert,
+	   and extract individual bits.
+
+	   If you don't know what to do here, say Y.
+
 config TOOLCHAIN_HAS_ZBC
 	bool
 	default y

@@ -28,6 +28,11 @@ static inline bool rvzbb_enabled(void)
 	return IS_ENABLED(CONFIG_RISCV_ISA_ZBB) && riscv_has_extension_likely(RISCV_ISA_EXT_ZBB);
 }
 
+static inline bool rvzbs_enabled(void)
+{
+	return IS_ENABLED(CONFIG_RISCV_ISA_ZBS) && riscv_has_extension_likely(RISCV_ISA_EXT_ZBS);
+}
+
 enum {
 	RV_REG_ZERO =	0,	/* The constant value 0 */
 	RV_REG_RA =	1,	/* Return address */
@@ -793,6 +798,17 @@ static inline u32 rvzbb_rev8(u8 rd, u8 rs)
 		return rv_i_insn(0x6b8, rs, 5, rd, 0x13);
 
 	return rv_i_insn(0x698, rs, 5, rd, 0x13);
+}
+
+/* RVZBS instructions. */
+static inline u32 rvzbs_bseti(u8 rd, u8 rs, u8 shamt)
+{
+	return rv_i_insn(0x280 | shamt, rs, 1, rd, 0x13);
+}
+
+static inline u32 rvzbs_bclri(u8 rd, u8 rs, u8 shamt)
+{
+	return rv_i_insn(0x480 | shamt, rs, 1, rd, 0x13);
 }
 
 /*
