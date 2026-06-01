@@ -6400,6 +6400,18 @@
 			replacement properties are not found. See the Kconfig
 			entry for RISCV_ISA_FALLBACK.
 
+	riscv.copy_page=
+			[RISCV]
+			Format: {auto | scalar | vector}
+			Select the RISC-V copy_page() implementation when
+			CONFIG_RISCV_ISA_V is enabled. The default "auto"
+			uses a boot-time benchmark to enable vector page
+			copying only when it is faster than memcpy(). "scalar"
+			forces the memcpy() fallback. "vector" enables vector
+			copying when the vector extension is available and
+			kernel-mode vector use is legal for the calling
+			context.
+
 	ro		[KNL] Mount root device read-only on boot
 
 	rodata=		[KNL,EARLY]

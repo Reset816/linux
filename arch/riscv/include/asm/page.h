@@ -48,11 +48,15 @@ void clear_page(void *page);
 #else
 #define clear_page(pgaddr)			memset((pgaddr), 0, PAGE_SIZE)
 #endif
+#ifdef CONFIG_RISCV_ISA_V
+void copy_page(void *to, const void *from);
+#else
 #define copy_page(to, from)			memcpy((to), (from), PAGE_SIZE)
+#endif
 
 #define clear_user_page(pgaddr, vaddr, page)	clear_page(pgaddr)
 #define copy_user_page(vto, vfrom, vaddr, topg) \
-			memcpy((vto), (vfrom), PAGE_SIZE)
+			copy_page((vto), (vfrom))
 
 /*
  * Use struct definitions to apply C type checking
