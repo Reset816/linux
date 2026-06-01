@@ -6,6 +6,7 @@
  */
 
 #include <linux/bitfield.h>
+#include <linux/bitops.h>
 #include <linux/bpf.h>
 #include <linux/filter.h>
 #include <linux/memory.h>
@@ -139,6 +140,11 @@ static bool is_32b_int(s64 val)
 	return -(1L << 31) <= val && val < (1L << 31);
 }
 
+static bool is_single_bit_mask(u64 val)
+{
+	return val && !(val & (val - 1));
+}
+
 static bool in_auipc_jalr_range(s64 val)
 {
 	/*
@@ -226,6 +232,51 @@ static void emit_imm(u8 rd, s64 val, struct rv_jit_context *ctx)
 	emit_slli(rd, rd, shift, ctx);
 	if (lower)
 		emit_addi(rd, rd, lower, ctx);
+}
+
+static bool emit_zbs_imm(u8 rd, u8 op, s32 imm, bool is64,
+			 struct rv_jit_context *ctx)
+{
+	u64 mask = is64 ? (u64)(s64)imm : (u32)imm;
+	u64 clear_mask = is64 ? ~mask : (u32)~mask;
+	int shamt;
+
+	if (!rvzbs_enabled() || is_12b_int(imm))
+		return false;
+
+	switch (op) {
+	case BPF_AND:
+		if (!is_single_bit_mask(clear_mask))
+			return false;
+		emit(rvzbs_bclri(rd, rd, __ffs64(clear_mask)), ctx);
+		return true;
+	case BPF_OR:
+		if (!is_single_bit_mask(mask))
+			return false;
+		shamt = __ffs64(mask);
+		emit(rvzbs_bseti(rd, rd, shamt), ctx);
+		return true;
+	case BPF_XOR:
+		if (!is_single_bit_mask(mask))
+			return false;
+		shamt = __ffs64(mask);
+		emit(rvzbs_binvi(rd, rd, shamt), ctx);
+		return true;
+	}
+
+	return false;
+}
+
+static bool emit_zbs_jset(u8 rd, s32 imm, bool is64,
+			  struct rv_jit_context *ctx)
+{
+	u64 mask = is64 ? (u64)(s64)imm : (u32)imm;
+
+	if (!rvzbs_enabled() || is_12b_int(imm) || !is_single_bit_mask(mask))
+		return false;
+
+	emit(rvzbs_bexti(RV_REG_T1, rd, __ffs64(mask)), ctx);
+	return true;
 }
 
 static void __build_epilogue(bool is_tail_call, struct rv_jit_context *ctx)
@@ -1333,6 +1384,7 @@ int bpf_jit_emit_insn(const struct bpf_insn *insn, struct rv_jit_context *ctx,
 		    BPF_CLASS(insn->code) == BPF_JMP;
 	int s, e, rvoff, ret, i = insn - ctx->prog->insnsi;
 	struct bpf_prog_aux *aux = ctx->prog->aux;
+	bool zbs_jset;
 	u8 rd = -1, rs = -1, code = insn->code;
 	s16 off = insn->off;
 	s32 imm = insn->imm;
@@ -1530,33 +1582,39 @@ int bpf_jit_emit_insn(const struct bpf_insn *insn, struct rv_jit_context *ctx,
 		break;
 	case BPF_ALU | BPF_AND | BPF_K:
 	case BPF_ALU64 | BPF_AND | BPF_K:
-		if (is_12b_int(imm)) {
-			emit_andi(rd, rd, imm, ctx);
-		} else {
-			emit_imm(RV_REG_T1, imm, ctx);
-			emit_and(rd, rd, RV_REG_T1, ctx);
+		if (!emit_zbs_imm(rd, BPF_AND, imm, is64, ctx)) {
+			if (is_12b_int(imm)) {
+				emit_andi(rd, rd, imm, ctx);
+			} else {
+				emit_imm(RV_REG_T1, imm, ctx);
+				emit_and(rd, rd, RV_REG_T1, ctx);
+			}
 		}
 		if (!is64 && !aux->verifier_zext)
 			emit_zextw(rd, rd, ctx);
 		break;
 	case BPF_ALU | BPF_OR | BPF_K:
 	case BPF_ALU64 | BPF_OR | BPF_K:
-		if (is_12b_int(imm)) {
-			emit(rv_ori(rd, rd, imm), ctx);
-		} else {
-			emit_imm(RV_REG_T1, imm, ctx);
-			emit_or(rd, rd, RV_REG_T1, ctx);
+		if (!emit_zbs_imm(rd, BPF_OR, imm, is64, ctx)) {
+			if (is_12b_int(imm)) {
+				emit(rv_ori(rd, rd, imm), ctx);
+			} else {
+				emit_imm(RV_REG_T1, imm, ctx);
+				emit_or(rd, rd, RV_REG_T1, ctx);
+			}
 		}
 		if (!is64 && !aux->verifier_zext)
 			emit_zextw(rd, rd, ctx);
 		break;
 	case BPF_ALU | BPF_XOR | BPF_K:
 	case BPF_ALU64 | BPF_XOR | BPF_K:
-		if (is_12b_int(imm)) {
-			emit(rv_xori(rd, rd, imm), ctx);
-		} else {
-			emit_imm(RV_REG_T1, imm, ctx);
-			emit_xor(rd, rd, RV_REG_T1, ctx);
+		if (!emit_zbs_imm(rd, BPF_XOR, imm, is64, ctx)) {
+			if (is_12b_int(imm)) {
+				emit(rv_xori(rd, rd, imm), ctx);
+			} else {
+				emit_imm(RV_REG_T1, imm, ctx);
+				emit_xor(rd, rd, RV_REG_T1, ctx);
+			}
 		}
 		if (!is64 && !aux->verifier_zext)
 			emit_zextw(rd, rd, ctx);
@@ -1729,17 +1787,20 @@ int bpf_jit_emit_insn(const struct bpf_insn *insn, struct rv_jit_context *ctx,
 	case BPF_JMP32 | BPF_JSET | BPF_K:
 		rvoff = rv_offset(i, off, ctx);
 		s = ctx->ninsns;
-		if (is_12b_int(imm)) {
-			emit_andi(RV_REG_T1, rd, imm, ctx);
-		} else {
-			emit_imm(RV_REG_T1, imm, ctx);
-			emit_and(RV_REG_T1, rd, RV_REG_T1, ctx);
+		zbs_jset = emit_zbs_jset(rd, imm, is64, ctx);
+		if (!zbs_jset) {
+			if (is_12b_int(imm)) {
+				emit_andi(RV_REG_T1, rd, imm, ctx);
+			} else {
+				emit_imm(RV_REG_T1, imm, ctx);
+				emit_and(RV_REG_T1, rd, RV_REG_T1, ctx);
+			}
 		}
 		/* For jset32, we should clear the upper 32 bits of t1, but
 		 * sign-extension is sufficient here and saves one instruction,
 		 * as t1 is used only in comparison against zero.
 		 */
-		if (!is64 && imm < 0)
+		if (!zbs_jset && !is64 && imm < 0)
 			emit_sextw(RV_REG_T1, RV_REG_T1, ctx);
 		e = ctx->ninsns;
 		rvoff -= ninsns_rvoff(e - s);
