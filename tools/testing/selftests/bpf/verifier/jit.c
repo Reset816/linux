@@ -193,6 +193,70 @@
 	.retval = 2,
 },
 {
+	"jit: single-bit imm ALU/JSET masks",
+	.insns = {
+	BPF_MOV64_IMM(BPF_REG_0, 1),
+
+	BPF_MOV64_IMM(BPF_REG_1, 0),
+	BPF_ALU64_IMM(BPF_OR, BPF_REG_1, 1 << 11),
+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 1 << 11, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_ALU64_IMM(BPF_XOR, BPF_REG_1, 1 << 11),
+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_LD_IMM64(BPF_REG_1, 0x123456789abcdef0ULL),
+	BPF_ALU64_IMM(BPF_AND, BPF_REG_1, ~(1 << 11)),
+	BPF_JMP_IMM(BPF_JSET, BPF_REG_1, 1 << 11, 1),
+	BPF_JMP_A(1),
+	BPF_EXIT_INSN(),
+
+	BPF_LD_IMM64(BPF_REG_1, 0x123456789abcdef0ULL),
+	BPF_ALU64_IMM(BPF_AND, BPF_REG_1, 1 << 12),
+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 1 << 12, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_JMP_IMM(BPF_JSET, BPF_REG_1, 1 << 12, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_MOV64_IMM(BPF_REG_0, 2),
+	BPF_EXIT_INSN(),
+	},
+	.result = ACCEPT,
+	.retval = 2,
+},
+{
+	"jit: single-bit imm ALU32 bit31 masks",
+	.insns = {
+	BPF_MOV64_IMM(BPF_REG_0, 1),
+
+	BPF_MOV64_IMM(BPF_REG_1, 0),
+	BPF_ALU32_IMM(BPF_OR, BPF_REG_1, 0x80000000),
+	BPF_JMP32_IMM(BPF_JSET, BPF_REG_1, 0x80000000, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_ALU32_IMM(BPF_XOR, BPF_REG_1, 0x80000000),
+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_MOV64_IMM(BPF_REG_1, -1),
+	BPF_ALU32_IMM(BPF_AND, BPF_REG_1, 0x7fffffff),
+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0x7fffffff, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_MOV64_IMM(BPF_REG_1, -1),
+	BPF_ALU32_IMM(BPF_AND, BPF_REG_1, 0x80000000),
+	BPF_JMP32_IMM(BPF_JSET, BPF_REG_1, 0x80000000, 1),
+	BPF_EXIT_INSN(),
+
+	BPF_MOV64_IMM(BPF_REG_0, 2),
+	BPF_EXIT_INSN(),
+	},
+	.result = ACCEPT,
+	.retval = 2,
+},
+{
 	"jit: torturous jumps, imm8 nop jmp and pure jump padding",
 	.insns = { },
 	.fill_helper = bpf_fill_torturous_jumps,
