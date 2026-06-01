@@ -2245,6 +2245,17 @@ config TEST_DHRY
 
 	  If unsure, say N.
 
+config TEST_RISCV_V_MEMCPY
+	tristate "RISC-V vector memcpy benchmark test"
+	depends on RISCV && RISCV_ISA_V
+	help
+	  Builds a small RISC-V kernel memcpy correctness and benchmark module.
+	  The test covers sizes below and above the vector memcpy threshold,
+	  source and destination alignment offsets, repeated copies, and an
+	  IRQ-disabled fallback case where kernel vector use is not allowed.
+
+	  If unsure, say N.
+
 config LKDTM
 	tristate "Linux Kernel Dump Test Tool Module"
 	depends on DEBUG_FS

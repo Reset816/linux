@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-only
 lib-y			+= delay.o
 lib-y			+= memcpy.o
+KASAN_SANITIZE_memcpy_vector_wrapper.o := n
+KCOV_INSTRUMENT_memcpy_vector_wrapper.o := n
+UBSAN_SANITIZE_memcpy_vector_wrapper.o := n
+CFLAGS_memcpy_vector_wrapper.o := -ffreestanding
+lib-$(CONFIG_RISCV_ISA_V)	+= memcpy_vector_wrapper.o
+lib-$(CONFIG_RISCV_ISA_V)	+= memcpy_vector.o
 lib-y			+= memset.o
 lib-y			+= memmove.o
 ifeq ($(CONFIG_KASAN_GENERIC)$(CONFIG_KASAN_SW_TAGS),)
