@@ -70,7 +70,9 @@ int acpi_get_riscv_isa(struct acpi_table_header *table,
 		       unsigned int cpu, const char **isa);
 
 void acpi_get_cbo_block_size(struct acpi_table_header *table, u32 *cbom_size,
-			     u32 *cboz_size, u32 *cbop_size);
+			     u32 *cboz_size, u32 *cbop_size,
+			     bool *cbom_mismatched, bool *cboz_mismatched,
+			     bool *cbop_mismatched);
 #else
 static inline void acpi_init_rintc_map(void) { }
 static inline struct acpi_madt_rintc *acpi_cpu_get_madt_rintc(int cpu)
@@ -86,7 +88,10 @@ static inline int acpi_get_riscv_isa(struct acpi_table_header *table,
 
 static inline void acpi_get_cbo_block_size(struct acpi_table_header *table,
 					   u32 *cbom_size, u32 *cboz_size,
-					   u32 *cbop_size) { }
+					   u32 *cbop_size,
+					   bool *cbom_mismatched,
+					   bool *cboz_mismatched,
+					   bool *cbop_mismatched) { }
 
 #endif /* CONFIG_ACPI */
 

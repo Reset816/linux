@@ -85,7 +85,9 @@ int acpi_get_riscv_isa(struct acpi_table_header *table, unsigned int cpu, const 
 
 static void acpi_parse_hart_info_cmo_node(struct acpi_table_rhct *rhct,
 					  struct acpi_rhct_hart_info *hart_info,
-					  u32 *cbom_size, u32 *cboz_size, u32 *cbop_size)
+					  u32 *cbom_size, u32 *cboz_size, u32 *cbop_size,
+					  bool *cbom_mismatched, bool *cboz_mismatched,
+					  bool *cbop_mismatched)
 {
 	u32 size_hartinfo = sizeof(struct acpi_rhct_hart_info);
 	u32 size_hdr = sizeof(struct acpi_rhct_node_header);
@@ -103,22 +105,31 @@ static void acpi_parse_hart_info_cmo_node(struct acpi_table_rhct *rhct,
 			if (cbom_size && cmo_node->cbom_size <= 30) {
 				if (!*cbom_size)
 					*cbom_size = BIT(cmo_node->cbom_size);
-				else if (*cbom_size != BIT(cmo_node->cbom_size))
+				else if (*cbom_size != BIT(cmo_node->cbom_size)) {
 					pr_warn("CBOM size is not the same across harts\n");
+					if (cbom_mismatched)
+						*cbom_mismatched = true;
+				}
 			}
 
 			if (cboz_size && cmo_node->cboz_size <= 30) {
 				if (!*cboz_size)
 					*cboz_size = BIT(cmo_node->cboz_size);
-				else if (*cboz_size != BIT(cmo_node->cboz_size))
+				else if (*cboz_size != BIT(cmo_node->cboz_size)) {
 					pr_warn("CBOZ size is not the same across harts\n");
+					if (cboz_mismatched)
+						*cboz_mismatched = true;
+				}
 			}
 
 			if (cbop_size && cmo_node->cbop_size <= 30) {
 				if (!*cbop_size)
 					*cbop_size = BIT(cmo_node->cbop_size);
-				else if (*cbop_size != BIT(cmo_node->cbop_size))
+				else if (*cbop_size != BIT(cmo_node->cbop_size)) {
 					pr_warn("CBOP size is not the same across harts\n");
+					if (cbop_mismatched)
+						*cbop_mismatched = true;
+				}
 			}
 		}
 	}
@@ -130,7 +141,9 @@ static void acpi_parse_hart_info_cmo_node(struct acpi_table_rhct *rhct,
  * multiple times, pass NULL so that the table remains in memory.
  */
 void acpi_get_cbo_block_size(struct acpi_table_header *table, u32 *cbom_size,
-			     u32 *cboz_size, u32 *cbop_size)
+			     u32 *cboz_size, u32 *cbop_size,
+			     bool *cbom_mismatched, bool *cboz_mismatched,
+			     bool *cbop_mismatched)
 {
 	u32 size_hdr = sizeof(struct acpi_rhct_node_header);
 	struct acpi_rhct_node_header *node, *end;
@@ -156,6 +169,12 @@ void acpi_get_cbo_block_size(struct acpi_table_header *table, u32 *cbom_size,
 
 	if (cbop_size)
 		*cbop_size = 0;
+	if (cbom_mismatched)
+		*cbom_mismatched = false;
+	if (cboz_mismatched)
+		*cboz_mismatched = false;
+	if (cbop_mismatched)
+		*cbop_mismatched = false;
 
 	end = ACPI_ADD_PTR(struct acpi_rhct_node_header, rhct, rhct->header.length);
 	for (node = ACPI_ADD_PTR(struct acpi_rhct_node_header, rhct, rhct->node_offset);
@@ -164,7 +183,10 @@ void acpi_get_cbo_block_size(struct acpi_table_header *table, u32 *cbom_size,
 		if (node->type == ACPI_RHCT_NODE_TYPE_HART_INFO) {
 			hart_info = ACPI_ADD_PTR(struct acpi_rhct_hart_info, node, size_hdr);
 			acpi_parse_hart_info_cmo_node(rhct, hart_info, cbom_size,
-						      cboz_size, cbop_size);
+						      cboz_size, cbop_size,
+						      cbom_mismatched,
+						      cboz_mismatched,
+						      cbop_mismatched);
 		}
 	}
 }

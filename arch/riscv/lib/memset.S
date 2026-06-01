@@ -6,11 +6,82 @@
 
 #include <linux/linkage.h>
 #include <asm/asm.h>
+#include <asm/asm-offsets.h>
+#include <asm/alternative-macros.h>
+#include <asm/hwcap.h>
+#include <asm/insn-def.h>
+
+#if defined(CONFIG_RISCV_ISA_ZICBOZ) && defined(CONFIG_64BIT) && \
+	defined(CONFIG_MMU) && !defined(CONFIG_XIP_KERNEL) && \
+	!defined(__RISCV_PURGATORY__)
+#define CBOZ_ALT(order, old, new)				\
+	ALTERNATIVE(old, new, 0,				\
+		    ((order) << 16) | RISCV_ISA_EXT_ZICBOZ,	\
+		    CONFIG_RISCV_ISA_ZICBOZ)
+#endif
 
 /* void *memset(void *, int, size_t) */
 SYM_FUNC_START(__memset)
 	move t0, a0  /* Preserve return value */
 
+#if defined(CONFIG_RISCV_ISA_ZICBOZ) && defined(CONFIG_64BIT) && \
+	defined(CONFIG_MMU) && !defined(CONFIG_XIP_KERNEL) && \
+	!defined(__RISCV_PURGATORY__)
+	/* Try cbo.zero only for large zero fills in ordinary linear memory. */
+	bnez a1, .Lscalar
+	sltiu a3, a2, 256
+	bnez a3, .Lscalar
+	CBOZ_ALT(12, "j .Lscalar", "nop")
+
+	lw a6, riscv_cboz_block_size
+	beqz a6, .Lscalar
+	sltiu a3, a6, 16
+	bnez a3, .Lscalar
+
+	la a5, kernel_map
+	REG_L a5, KERNEL_MAP_PAGE_OFFSET(a5)
+	bltu t0, a5, .Lscalar
+	la a4, high_memory
+	REG_L a4, 0(a4)
+	beqz a4, .Lscalar
+	add a3, t0, a2
+	bltu a3, t0, .Lscalar
+	bltu a4, a3, .Lscalar
+
+	/* a4 = align_up(start, block), a5 = align_down(end, block) */
+	addi a4, a6, -1
+	add a4, t0, a4
+	neg a7, a6
+	and a4, a4, a7
+	and a5, a3, a7
+	bgeu a4, a5, .Lscalar
+
+	/*
+	 * Fill the unaligned head with scalar byte stores. Only the full block
+	 * interval [a4, a5) is cleared with cbo.zero.
+	 */
+	beq t0, a4, .Lcboz_head_done
+.Lcboz_head:
+	sb zero, 0(t0)
+	addi t0, t0, 1
+	bltu t0, a4, .Lcboz_head
+.Lcboz_head_done:
+	mv t0, a4
+
+.Lcboz_loop:
+	CBO_ZERO(t0)
+	add t0, t0, a6
+	bltu t0, a5, .Lcboz_loop
+
+	beq t0, a3, .Ldone
+.Lcboz_tail:
+	sb zero, 0(t0)
+	addi t0, t0, 1
+	bltu t0, a3, .Lcboz_tail
+	j .Ldone
+
+.Lscalar:
+#endif
 	/* Defer to byte-oriented fill for small sizes */
 	sltiu a3, a2, 16
 	bnez a3, 4f
@@ -108,6 +179,7 @@ SYM_FUNC_START(__memset)
 	addi t0, t0, 1
 	bltu t0, a3, 5b
 6:
+.Ldone:
 	ret
 SYM_FUNC_END(__memset)
 SYM_FUNC_ALIAS_WEAK(memset, __memset)

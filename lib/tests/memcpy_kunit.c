@@ -373,6 +373,40 @@ static void memmove_large_test(struct kunit *test)
 	copy_large_test(test, true);
 }
 
+static void memset_zero_boundaries_test(struct kunit *test)
+{
+	static const int sizes[] = {
+		1, 7, 15, 16, 31, 32, 63, 64, 65, 127, 128,
+		129, 255, 256, 257, 511, 512, 513, 1023, 1024,
+	};
+	u8 *buf, *shadow;
+	size_t buf_size = 2048;
+
+	buf = kunit_kmalloc(test, buf_size, GFP_KERNEL);
+	KUNIT_ASSERT_NOT_NULL(test, buf);
+	shadow = kunit_kmalloc(test, buf_size, GFP_KERNEL);
+	KUNIT_ASSERT_NOT_NULL(test, shadow);
+
+	for (int offset = 0; offset < 128; offset++) {
+		for (int i = 0; i < ARRAY_SIZE(sizes); i++) {
+			int bytes = sizes[i];
+
+			memset(buf, 0xa5, buf_size);
+			memset(shadow, 0xa5, buf_size);
+
+			memset(buf + offset, 0, bytes);
+			for (int j = 0; j < bytes; j++)
+				shadow[offset + j] = 0;
+
+			KUNIT_ASSERT_EQ_MSG(test, memcmp(buf, shadow, buf_size), 0,
+					    "with size %d at offset %d",
+					    bytes, offset);
+		}
+
+		cond_resched();
+	}
+}
+
 /*
  * On the assumption that boundary conditions are going to be the most
  * sensitive, instead of taking a full step (inc) each iteration,
@@ -495,6 +529,7 @@ static void memmove_overlap_test(struct kunit *test)
 
 static struct kunit_case memcpy_test_cases[] = {
 	KUNIT_CASE(memset_test),
+	KUNIT_CASE_SLOW(memset_zero_boundaries_test),
 	KUNIT_CASE(memcpy_test),
 	KUNIT_CASE_SLOW(memcpy_large_test),
 	KUNIT_CASE_SLOW(memmove_test),

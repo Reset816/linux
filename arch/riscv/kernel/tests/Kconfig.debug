@@ -30,6 +30,17 @@ config RISCV_MODULE_LINKING_KUNIT
 
          If unsure, say N.
 
+config RISCV_ZICBOZ_MEMSET_TEST
+       tristate "Runtime test for RISC-V Zicboz memset zero path"
+       depends on 64BIT && MMU
+       depends on RISCV_ISA_ZICBOZ
+       help
+         Builds a small test module for the RISC-V memset(dst, 0, n)
+         implementation. It checks unaligned zero ranges, nonzero fallback,
+         vmalloc fallback, and prints rough timing for zero and nonzero fills.
+
+         If unsure, say N.
+
 endif # RUNTIME_TESTING_MENU
 
 endmenu # "arch/riscv/kernel runtime Testing"

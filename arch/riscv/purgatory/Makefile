@@ -95,6 +95,9 @@ CFLAGS_string.o			+= $(PURGATORY_CFLAGS)
 CFLAGS_REMOVE_ctype.o		+= $(PURGATORY_CFLAGS_REMOVE)
 CFLAGS_ctype.o			+= $(PURGATORY_CFLAGS)
 
+AFLAGS_REMOVE_memset.o		+= $(PURGATORY_CFLAGS_REMOVE)
+AFLAGS_memset.o		+= $(PURGATORY_CFLAGS) -D__RISCV_PURGATORY__
+
 asflags-remove-y		+= $(foreach x, -g -gdwarf-4 -gdwarf-5, $(x) -Wa,$(x))
 
 $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE

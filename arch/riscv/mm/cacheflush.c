@@ -119,7 +119,8 @@ EXPORT_SYMBOL_GPL(riscv_cbop_block_size);
 
 static void __init cbo_get_block_size(struct device_node *node,
 				      const char *name, u32 *block_size,
-				      unsigned long *first_hartid)
+				      unsigned long *first_hartid,
+				      bool *mismatched)
 {
 	unsigned long hartid;
 	u32 val;
@@ -136,6 +137,8 @@ static void __init cbo_get_block_size(struct device_node *node,
 	} else if (*block_size != val) {
 		pr_warn("%s mismatched between harts %lu and %lu\n",
 			name, *first_hartid, hartid);
+		if (mismatched)
+			*mismatched = true;
 	}
 }
 
@@ -143,6 +146,7 @@ void __init riscv_init_cbo_blocksizes(void)
 {
 	unsigned long cbom_hartid, cboz_hartid, cbop_hartid;
 	u32 cbom_block_size = 0, cboz_block_size = 0, cbop_block_size = 0;
+	bool cbom_mismatched = false, cboz_mismatched = false, cbop_mismatched = false;
 	struct device_node *node;
 	struct acpi_table_header *rhct;
 	acpi_status status;
@@ -151,20 +155,32 @@ void __init riscv_init_cbo_blocksizes(void)
 		for_each_of_cpu_node(node) {
 			/* set block-size for cbom and/or cboz extension if available */
 			cbo_get_block_size(node, "riscv,cbom-block-size",
-					   &cbom_block_size, &cbom_hartid);
+					   &cbom_block_size, &cbom_hartid,
+					   &cbom_mismatched);
 			cbo_get_block_size(node, "riscv,cboz-block-size",
-					   &cboz_block_size, &cboz_hartid);
+					   &cboz_block_size, &cboz_hartid,
+					   &cboz_mismatched);
 			cbo_get_block_size(node, "riscv,cbop-block-size",
-					   &cbop_block_size, &cbop_hartid);
+					   &cbop_block_size, &cbop_hartid,
+					   &cbop_mismatched);
 		}
 	} else {
 		status = acpi_get_table(ACPI_SIG_RHCT, 0, &rhct);
 		if (ACPI_FAILURE(status))
 			return;
 
-		acpi_get_cbo_block_size(rhct, &cbom_block_size, &cboz_block_size, &cbop_block_size);
+		acpi_get_cbo_block_size(rhct, &cbom_block_size, &cboz_block_size,
+					&cbop_block_size, &cbom_mismatched,
+					&cboz_mismatched, &cbop_mismatched);
 		acpi_put_table((struct acpi_table_header *)rhct);
 	}
+
+	if (cbom_mismatched)
+		cbom_block_size = 0;
+	if (cboz_mismatched)
+		cboz_block_size = 0;
+	if (cbop_mismatched)
+		cbop_block_size = 0;
 
 	if (cbom_block_size)
 		riscv_cbom_block_size = cbom_block_size;
