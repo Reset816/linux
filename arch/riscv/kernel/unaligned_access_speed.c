@@ -29,6 +29,16 @@ static long unaligned_vector_speed_param = RISCV_HWPROBE_MISALIGNED_VECTOR_UNKNO
 
 static cpumask_t fast_misaligned_access;
 
+static void set_cpu_unaligned_access_speed(int cpu, long speed)
+{
+	per_cpu(misaligned_access_speed, cpu) = speed;
+
+	if (speed == RISCV_HWPROBE_MISALIGNED_SCALAR_FAST)
+		cpumask_set_cpu(cpu, &fast_misaligned_access);
+	else
+		cpumask_clear_cpu(cpu, &fast_misaligned_access);
+}
+
 #ifdef CONFIG_RISCV_PROBE_UNALIGNED_ACCESS
 static int check_unaligned_access(void *param)
 {
@@ -111,16 +121,7 @@ static int check_unaligned_access(void *param)
 		ratio % 100,
 		(speed == RISCV_HWPROBE_MISALIGNED_SCALAR_FAST) ? "fast" : "slow");
 
-	per_cpu(misaligned_access_speed, cpu) = speed;
-
-	/*
-	 * Set the value of fast_misaligned_access of a CPU. These operations
-	 * are atomic to avoid race conditions.
-	 */
-	if (speed == RISCV_HWPROBE_MISALIGNED_SCALAR_FAST)
-		cpumask_set_cpu(cpu, &fast_misaligned_access);
-	else
-		cpumask_clear_cpu(cpu, &fast_misaligned_access);
+	set_cpu_unaligned_access_speed(cpu, speed);
 
 	return 0;
 }
@@ -245,7 +246,7 @@ static int riscv_online_cpu(unsigned int cpu)
 	if (per_cpu(misaligned_access_speed, cpu) != RISCV_HWPROBE_MISALIGNED_SCALAR_UNKNOWN) {
 		goto exit;
 	} else if (unaligned_scalar_speed_param != RISCV_HWPROBE_MISALIGNED_SCALAR_UNKNOWN) {
-		per_cpu(misaligned_access_speed, cpu) = unaligned_scalar_speed_param;
+		set_cpu_unaligned_access_speed(cpu, unaligned_scalar_speed_param);
 		goto exit;
 	}
 
@@ -449,7 +450,7 @@ static int __init check_unaligned_access_all_cpus(void)
 		pr_info("scalar unaligned access speed set to '%s' (%lu) by command line\n",
 			speed_str[unaligned_scalar_speed_param], unaligned_scalar_speed_param);
 		for_each_online_cpu(cpu)
-			per_cpu(misaligned_access_speed, cpu) = unaligned_scalar_speed_param;
+			set_cpu_unaligned_access_speed(cpu, unaligned_scalar_speed_param);
 	} else if (!check_unaligned_access_emulated_all_cpus()) {
 		check_unaligned_access_speed_all_cpus();
 	}

@@ -16,6 +16,7 @@ $(obj)/ctype.o: $(srctree)/lib/ctype.c FORCE
 
 $(obj)/memcpy.o: $(srctree)/arch/riscv/lib/memcpy.S FORCE
 	$(call if_changed_rule,as_o_S)
+AFLAGS_memcpy.o := -D__RISCV_PURGATORY
 
 $(obj)/memset.o: $(srctree)/arch/riscv/lib/memset.S FORCE
 	$(call if_changed_rule,as_o_S)

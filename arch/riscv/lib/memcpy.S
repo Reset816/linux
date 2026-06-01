@@ -16,7 +16,7 @@ SYM_FUNC_START(__memcpy)
 	/* Use word-oriented copy only if low-order bits match */
 	andi a3, t6, SZREG-1
 	andi a4, a1, SZREG-1
-	bne a3, a4, 4f
+	bne a3, a4, 8f
 
 	beqz a3, 2f  /* Skip if already aligned */
 	/*
@@ -104,6 +104,35 @@ SYM_FUNC_START(__memcpy)
 	bltu a1, a3, 5b
 6:
 	ret
+
+8:
+#if defined(CONFIG_RISCV_PROBE_UNALIGNED_ACCESS) && defined(CONFIG_JUMP_LABEL) && !defined(__RISCV_PURGATORY)
+	/*
+	 * Only use unaligned XLEN loads/stores when the scalar misaligned
+	 * access probe has enabled fast_unaligned_access_speed_key.  The key
+	 * is enabled only when all online CPUs are known to be fast, and CPU
+	 * hotplug updates it for heterogeneous systems.
+	 *
+	 * This is a static_branch_likely(&fast_unaligned_access_speed_key)
+	 * style site for a DEFINE_STATIC_KEY_FALSE key: disabled kernels jump
+	 * to the conservative byte/word fallback, enabled kernels patch this
+	 * to a nop and continue to the common bulk XLEN copy loop.
+	 */
+	.align 2
+	.option push
+	.option norelax
+	.option norvc
+1:	j 4b
+	.option pop
+	.pushsection __jump_table, "aw"
+	.align RISCV_LGPTR
+	.long 1b - ., 4b - .
+	RISCV_PTR fast_unaligned_access_speed_key + 1 - .
+	.popsection
+	j 2b
+#else
+	j 4b
+#endif
 SYM_FUNC_END(__memcpy)
 SYM_FUNC_ALIAS_WEAK(memcpy, __memcpy)
 SYM_FUNC_ALIAS(__pi_memcpy, __memcpy)
